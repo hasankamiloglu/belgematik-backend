@@ -17,12 +17,25 @@ load_dotenv()
 BASE_DIR = os.path.abspath(os.path.dirname(__file__))
 
 
+# Geliştirme için yedek anahtar. Canlıda kullanılırsa uygulama başlamaz (app/__init__.py).
+VARSAYILAN_GIZLI_ANAHTAR = "gelistirme-icin-gecici-anahtar-canlida-degistirin"
+
+
 class Config:
     """Tüm ortamlarda ortak olan temel ayarlar."""
 
-    # SECRET_KEY -> Flask'ın oturum (session) ve form güvenliği için kullandığı
-    # gizli anahtar. .env içinde yoksa sadece geliştirme için yedek değer kullanılır.
-    SECRET_KEY = os.getenv("SECRET_KEY", "gelistirme-icin-gecici-anahtar")
+    # SECRET_KEY -> Gizli anahtar. Hafta 5'ten itibaren JWT token'ları bununla İMZALANIR.
+    # Bu anahtarı bilen biri istediği token'ı üretebilir; bu yüzden .env'de tutulur.
+    # .env içinde yoksa sadece geliştirme için yedek değer kullanılır.
+    SECRET_KEY = os.getenv("SECRET_KEY", VARSAYILAN_GIZLI_ANAHTAR)
+
+    # ---- Kimlik doğrulama ayarları (Hafta 5) ----
+    # Token (oturum) kaç dakika geçerli. Süre dolunca kullanıcı tekrar giriş yapar.
+    TOKEN_SURESI_DAKIKA = int(os.getenv("TOKEN_SURESI_DAKIKA", "60"))
+    # Kaç hatalı parola denemesinden sonra hesap kilitlensin.
+    GIRIS_DENEME_SINIRI = 5
+    # Kilit kaç dakika sürsün.
+    HESAP_KILIT_DAKIKA = 15
 
     # DATABASE_URL -> PostgreSQL bağlantı adresi (4. haftada kullanılacak).
     # Biçim: postgresql://kullanici:sifre@sunucu:port/veritabani_adi

@@ -8,6 +8,8 @@ Tüm adreslerin başında /api vardır (bkz. app/__init__.py -> url_prefix).
     GET /api/saglik    -> Sağlık kontrolü (sunucu ayakta mı?)
     GET /api/moduller  -> Modüllerin geliştirme durumu (frontend ana sayfası kullanır)
 
+Kimlik doğrulama uçları ayrı dosyadadır: app/api/kimlik.py (Hafta 5)
+
 Sonraki haftalarda eklenecek örnekler:
     POST /api/belgeler          -> belge fotoğrafı yükleme
     GET  /api/belgeler/<id>     -> bir belgenin çıkarılan verisi
@@ -19,19 +21,20 @@ from flask import Blueprint, jsonify
 api_bp = Blueprint("api", __name__)
 
 # Uygulamanın sürüm numarası. Sağlık kontrolünde döndürülür.
-SURUM = "0.3.0"
+SURUM = "0.4.0"
 
 # Ana modüller listesi: frontend bunu ana sayfada yol haritası olarak gösterir.
 # durum -> "hazir" (tamamlandı) veya "planli" (ileriki haftalarda)
 MODULLER = [
     {"ad": "Proje iskeleti ve mimari", "hafta": 3, "durum": "hazir"},
     {"ad": "Veritabanı ve veri erişim katmanı", "hafta": 4, "durum": "hazir"},
-    {"ad": "Fotoğraf yükleme", "hafta": 5, "durum": "planli"},
-    {"ad": "OCR / metin çıkarma", "hafta": 6, "durum": "planli"},
-    {"ad": "Alan eşleme ve doğrulama", "hafta": 7, "durum": "planli"},
-    {"ad": "Yapılandırılmış çıktı (JSON)", "hafta": 8, "durum": "planli"},
-    {"ad": "Düzeltme arayüzü", "hafta": 9, "durum": "planli"},
-    {"ad": "Dışa aktarma (Excel/CSV/JSON)", "hafta": 10, "durum": "planli"},
+    {"ad": "Kullanıcı yönetimi ve kimlik doğrulama", "hafta": 5, "durum": "hazir"},
+    {"ad": "Fotoğraf yükleme", "hafta": 6, "durum": "planli"},
+    {"ad": "OCR / metin çıkarma", "hafta": 7, "durum": "planli"},
+    {"ad": "Alan eşleme ve doğrulama", "hafta": 8, "durum": "planli"},
+    {"ad": "Yapılandırılmış çıktı (JSON)", "hafta": 9, "durum": "planli"},
+    {"ad": "Düzeltme arayüzü", "hafta": 10, "durum": "planli"},
+    {"ad": "Dışa aktarma (Excel/CSV/JSON)", "hafta": 11, "durum": "planli"},
 ]
 
 
@@ -41,7 +44,8 @@ def bilgi():
     return jsonify({
         "uygulama": "Belgematik API",
         "surum": SURUM,
-        "adresler": ["/api/saglik", "/api/moduller"],
+        "adresler": ["/api/saglik", "/api/moduller", "/api/auth/kayit", "/api/auth/giris",
+                     "/api/auth/ben", "/api/auth/cikis", "/api/yonetici/kullanicilar"],
     })
 
 

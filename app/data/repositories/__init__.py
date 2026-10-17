@@ -4,6 +4,7 @@ Repository (depo) deseni: Her tablo grubu için veri erişim (CRUD) fonksiyonlar
     kullanici_repo.py -> kullanicilar + abonelikler
     belge_repo.py     -> belgeler
     cikarim_repo.py   -> cikarim_kayitlari + cikarim_degerleri (N-N ara tablo)
+    kimlik_repo.py    -> giriş/çıkış ile ilgili kolonlar + giris_denemeleri (Hafta 5)
 
 CRUD = Create (ekle) / Read (oku) / Update (güncelle) / Delete (sil)
 

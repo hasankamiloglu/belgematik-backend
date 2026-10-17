@@ -10,7 +10,7 @@ Belgematik belgenin fotoğrafını alır, OCR ve yapay zekâ ile alanları (firm
 > - **belgematik-backend** (bu depo): Python + Flask API, iş kuralları, veritabanı
 > - **[belgematik-frontend](https://github.com/hasankamiloglu/belgematik-frontend)**: React arayüzü
 >
-> Durum: **v0.3 – Veritabanı ve veri erişim katmanı (Hafta 4)**. Modüller haftalık olarak eklenmektedir.
+> Durum: **v0.4 – Kullanıcı yönetimi ve kimlik doğrulama (Hafta 5)**. Modüller haftalık olarak eklenmektedir.
 
 ## API uçları
 
@@ -19,6 +19,13 @@ Belgematik belgenin fotoğrafını alır, OCR ve yapay zekâ ile alanları (firm
 | GET | `/api/` | API hakkında bilgi |
 | GET | `/api/saglik` | Sağlık kontrolü (sunucu ayakta mı?) |
 | GET | `/api/moduller` | Modüllerin geliştirme durumu |
+| POST | `/api/auth/kayit` | Yeni hesap (ad_soyad, email, parola, rol) |
+| POST | `/api/auth/giris` | Giriş → JWT token |
+| GET | `/api/auth/ben` | Giriş yapan kullanıcı 🔒 |
+| POST | `/api/auth/cikis` | Çıkış (token geçersiz olur) 🔒 |
+| GET | `/api/yonetici/kullanicilar` | Kullanıcılar + giriş denemeleri 🔒 **sadece yönetici** |
+
+🔒 = `Authorization: Bearer <token>` başlığı gerekir. Güvenlik ayrıntıları: [docs/guvenlik-notu.md](docs/guvenlik-notu.md)
 
 ## Özellikler (yol haritası)
 
@@ -26,6 +33,7 @@ Belgematik belgenin fotoğrafını alır, OCR ve yapay zekâ ile alanları (firm
 |---|---|---|
 | Proje iskeleti | Katmanlı mimari, API, CORS, testler | ✅ Hafta 3 |
 | Veritabanı | PostgreSQL tabloları, kısıtlar, indeksler, CRUD | ✅ Hafta 4 |
+| Kimlik doğrulama | Kayıt/giriş, parola hash, JWT, rol tabanlı erişim | ✅ Hafta 5 |
 | Fotoğraf yükleme | PNG / JPG / PDF yükleme ve ön işleme | ⏳ |
 | OCR | Tesseract (ücretsiz) + Yapay zekâ (pro) | ⏳ |
 | Alan eşleme ve doğrulama | Şema ve iş kuralı kontrolü | ⏳ |
@@ -34,7 +42,7 @@ Belgematik belgenin fotoğrafını alır, OCR ve yapay zekâ ile alanları (firm
 
 ## Teknolojiler
 
-Python · Flask · PostgreSQL (psycopg, saf SQL + migration) · Tesseract OCR · Görsel destekli LLM API · Pydantic · pytest · Git/GitHub
+Python · Flask · PostgreSQL (psycopg, saf SQL + migration) · PyJWT · Tesseract OCR · Görsel destekli LLM API · Pydantic · pytest · Git/GitHub
 
 ## Mimari
 
@@ -46,6 +54,7 @@ Backend **3 katmanlı mimari** ile geliştirilmektedir:
 app/
 ├── api/            # 1) SUNUM katmanı : API uçları, JSON cevaplar
 ├── services/       # 2) İŞ katmanı    : OCR, alan eşleme, doğrulama, dışa aktarma
+│   ├── auth/           # parola hash, JWT, giriş akışı (Hafta 5)
 │   ├── ocr/
 │   ├── extraction/
 │   ├── validation/
@@ -80,6 +89,9 @@ python run.py
 
 Kontrol: http://127.0.0.1:5000/api/saglik
 
+Örnek hesaplar (sadece geliştirme, parola `Deneme123`): `yonetici@ornek.test` (yönetici), `bireysel@ornek.test`, `kobi@ornek.test`, `muhasebeci@ornek.test`.
+Bir hesabı yönetici yapmak için: `python manage.py yonetici EMAIL`
+
 Testleri çalıştırmak için: `pytest`  ·  CRUD demosu: `python manage.py demo`
 
 Ekranları görmek için frontend'i de çalıştırın: [belgematik-frontend](https://github.com/hasankamiloglu/belgematik-frontend)
@@ -95,7 +107,7 @@ belgematik-backend/
 ├── docs/              # Diyagramlar, kurulum ve haftalık raporlar
 ├── config.py          # Ortam ayarları (geliştirme / test / canlı) ve CORS
 ├── run.py             # API'yi başlatan dosya
-├── manage.py          # Veritabanı komutları: migrate, seed, sorgular, demo
+├── manage.py          # Komutlar: migrate, seed, sorgular, demo, yonetici
 ├── requirements.txt   # Python kütüphaneleri
 ├── .env.example       # Örnek gizli ayar dosyası
 └── .gitignore         # Git'e gönderilmeyecek dosyalar

@@ -10,8 +10,8 @@ digraph Mimari {
     label="DEPO 1: belgematik-frontend  (React + Vite)  -  localhost:5173";
     style="rounded,filled"; fillcolor="#fff6e8"; color="#c27a12"; fontsize=13;
     app_jsx [label="App.jsx\n(ana bilesen)"];
-    comps [label="components/\nHeader, Hero, ModuleList, HealthBadge"];
-    client [label="api/client.js\n(fetch ile API cagrilari)"];
+    comps [label="pages/ + components/\nGiris, Kayit, Panel, Yonetici\nKorumaliSayfa (rota korumasi)"];
+    client [label="api/client.js\n(fetch + Authorization: Bearer token)"];
     app_jsx -> comps -> client;
   }
 
@@ -20,10 +20,12 @@ digraph Mimari {
     style="rounded,dashed"; color="#5d6677"; fontsize=13;
     subgraph cluster_api {
       label="1) SUNUM katmani - app/api/"; style="rounded,filled"; fillcolor="#f4eefa"; color="#5b2a86";
-      routes [label="routes.py\n/api/saglik   /api/moduller   ..."];
+      routes [label="routes.py\n/api/saglik   /api/moduller"];
+      kimlik_api [label="kimlik.py + yetki.py\n/api/auth/*  /api/yonetici/*\n@giris_gerekli  @yetki_gerekli"];
     }
     subgraph cluster_is {
       label="2) IS katmani - app/services/"; style="rounded,filled"; fillcolor="#eef3fb"; color="#2f5ea8";
+      auth [label="auth/\nParola hash, JWT, giris akisi", fillcolor="#fdf3e1"];
       ocr [label="ocr/\nMetin okuma"];
       extraction [label="extraction/\nAlan esleme"];
       validation [label="validation/\nDogrulama"];
@@ -48,6 +50,8 @@ digraph Mimari {
   kullanici -> app_jsx [label=" sayfayi acar"];
   client -> routes [label=" HTTP istegi / JSON cevap\n (CORS izinli)", color="#c27a12", fontcolor="#c27a12", penwidth=1.8, dir=both];
   routes -> ocr [label=" is cagrisi"];
+  kimlik_api -> auth;
+  auth -> repos [label=" kullanici / giris kaydi"];
   validation -> repos [label=" kaydet / oku"];
   models -> pg [label=" SQL"];
   ocr -> tess;

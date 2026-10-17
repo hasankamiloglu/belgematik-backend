@@ -77,7 +77,10 @@ def listele(conn, limit=50, offset=0):
     OFFSET -> baştan kaç satır atlansın (2. sayfa için offset=50)
     """
     return conn.execute(
-        "SELECT id, ad_soyad, email, rol FROM kullanicilar ORDER BY id LIMIT %s OFFSET %s",
+        """
+        SELECT id, ad_soyad, email, rol, yetki, olusturma_tarihi, son_giris
+        FROM kullanicilar ORDER BY id LIMIT %s OFFSET %s
+        """,
         (limit, offset),
     ).fetchall()
 

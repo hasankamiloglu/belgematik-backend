@@ -18,7 +18,7 @@ import os
 
 from flask import Flask, request
 
-from config import config_by_name
+from config import VARSAYILAN_GIZLI_ANAHTAR, config_by_name
 
 
 def create_app(config_name=None):
@@ -40,6 +40,11 @@ def create_app(config_name=None):
     # Seçilen ortamın ayarlarını uygulamaya yükle.
     app.config.from_object(config_by_name[config_name])
 
+    # GÜVENLİK: Canlıda SECRET_KEY varsayılan değerde kalırsa herkes sahte token
+    # imzalayabilir. Bu yüzden canlı ortamda varsayılan anahtarla BAŞLAMAYI REDDET.
+    if config_name == "production" and app.config["SECRET_KEY"] == VARSAYILAN_GIZLI_ANAHTAR:
+        raise RuntimeError("Canlı ortamda .env içine güçlü bir SECRET_KEY yazılmalı!")
+
     # uploads klasörü yoksa oluştur (exist_ok=True -> varsa hata verme).
     os.makedirs(app.config["UPLOAD_FOLDER"], exist_ok=True)
 
@@ -53,6 +58,14 @@ def create_app(config_name=None):
 
     app.register_blueprint(api_bp, url_prefix="/api")
 
+    # Hafta 5: kimlik doğrulama ve yönetici uçları (app/api/kimlik.py)
+    #   /api/auth/kayit, /api/auth/giris, /api/auth/ben, /api/auth/cikis
+    #   /api/yonetici/kullanicilar  (sadece yönetici)
+    from app.api.kimlik import kimlik_bp, yonetici_bp
+
+    app.register_blueprint(kimlik_bp, url_prefix="/api/auth")
+    app.register_blueprint(yonetici_bp, url_prefix="/api/yonetici")
+
     @app.route("/")
     def ana_sayfa():
         """
@@ -62,7 +75,7 @@ def create_app(config_name=None):
         return {
             "mesaj": "Belgematik backend API çalışıyor. Ekranlar için frontend'i açın.",
             "frontend": "http://localhost:5173",
-            "api": ["/api/saglik", "/api/moduller"],
+            "api": ["/api/saglik", "/api/moduller", "/api/auth/giris", "/api/auth/kayit"],
         }
 
     # ------------------------------------------------------------------

@@ -6,6 +6,10 @@ Kullanım (sanal ortam aktifken, backend klasöründe):
     python manage.py seed      -> Sentetik örnek veriyi yükler (önce tabloları boşaltır!)
     python manage.py demo      -> CRUD işlemlerini adım adım çalıştırıp ekrana yazar
     python manage.py sorgular  -> db/sorgular/ornek_sorgular.sql içindeki sorguları çalıştırır
+    python manage.py yonetici EMAIL -> Bu e-postadaki hesabı YÖNETİCİ yapar (Hafta 5)
+
+Yönetici yetkisi web sitesinden VERİLEMEZ; sadece sunucuya erişimi olan kişi
+bu komutla verebilir. Böylece kimse kendini yönetici yapamaz.
 """
 
 import sys
@@ -120,16 +124,32 @@ def komut_demo():
         print("    belge hâlâ var mı?", belge_repo.getir(conn, b["id"]) is not None)
 
 
+def komut_yonetici(email):
+    from app.services.auth.kimlik_servisi import yetki_ver
+
+    sonuc = yetki_ver(email, "yonetici")
+    if sonuc is None:
+        print(f"  ✘ '{email}' adresiyle kayıtlı kullanıcı bulunamadı.")
+    else:
+        print(f"  ✔ {sonuc['email']} artık yönetici. (Eski oturumları kapatıldı, tekrar giriş yapmalı.)")
+
+
 KOMUTLAR = {
     "migrate": komut_migrate,
     "seed": komut_seed,
     "demo": komut_demo,
     "sorgular": komut_sorgular,
+    "yonetici": komut_yonetici,  # e-posta parametresi alır
 }
 
 if __name__ == "__main__":
     # sys.argv -> komut satırında yazılanlar. "python manage.py seed" -> ["manage.py", "seed"]
-    if len(sys.argv) != 2 or sys.argv[1] not in KOMUTLAR:
+    # "python manage.py yonetici ali@ornek.test" -> ["manage.py", "yonetici", "ali@ornek.test"]
+    if len(sys.argv) < 2 or sys.argv[1] not in KOMUTLAR:
         print(__doc__)
         sys.exit(1)
-    KOMUTLAR[sys.argv[1]]()
+    komut, parametreler = sys.argv[1], sys.argv[2:]
+    if komut == "yonetici" and len(parametreler) != 1:
+        print("Kullanım: python manage.py yonetici EMAIL")
+        sys.exit(1)
+    KOMUTLAR[komut](*parametreler)

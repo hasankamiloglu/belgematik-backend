@@ -18,16 +18,29 @@
 -- TRUNCATE -> tablonun tüm satırlarını hızlıca siler.
 -- RESTART IDENTITY -> otomatik id sayaçlarını 1'den yeniden başlatır.
 -- CASCADE -> bu tablolara bağlı diğer tabloları da boşaltır.
-TRUNCATE kullanicilar, semalar RESTART IDENTITY CASCADE;
+TRUNCATE kullanicilar, semalar, giris_denemeleri RESTART IDENTITY CASCADE;
 
 
 -- ---------------------------------------------------------------------
--- Kullanıcılar (3 farklı rol)
+-- Kullanıcılar (3 hesap türü + 1 yönetici)
 -- ---------------------------------------------------------------------
-INSERT INTO kullanicilar (ad_soyad, email, sifre_hash, rol) VALUES
-    ('Deneme Muhasebeci', 'muhasebeci@ornek.test', 'sahte-hash-1', 'muhasebeci'),
-    ('Deneme Esnaf',      'kobi@ornek.test',       'sahte-hash-2', 'kobi'),
-    ('Deneme Kullanici',  'bireysel@ornek.test',   'sahte-hash-3', 'bireysel');
+-- Hafta 5: Parolalar artık GERÇEK hash'tir (app/services/auth/parola.py ile üretildi).
+-- Tüm örnek hesapların parolası: Deneme123   (SADECE geliştirme/demo içindir)
+-- Dikkat: parolalar aynı olduğu halde TUZ farklı olduğu için hash'ler birbirinden farklıdır.
+-- Biçim: pbkdf2_sha256$<tekrar>$<tuz>$<hash>
+INSERT INTO kullanicilar (ad_soyad, email, sifre_hash, rol, yetki) VALUES
+    ('Deneme Muhasebeci', 'muhasebeci@ornek.test',
+     'pbkdf2_sha256$600000$a08ca8d06ba1f150af7b2d49d2bc2332$ac875b5fda8eee2ee2429d8cef3eaa1fc75ba07f933b5ce84028f219681f6fd8',
+     'muhasebeci', 'kullanici'),
+    ('Deneme Esnaf', 'kobi@ornek.test',
+     'pbkdf2_sha256$600000$b34faaff221a8da724303a5508950742$5bfe3bdef939700c62357170b55a675527ced99dc3f04929819671d6f7f9c4a6',
+     'kobi', 'kullanici'),
+    ('Deneme Kullanici', 'bireysel@ornek.test',
+     'pbkdf2_sha256$600000$986c6a2b7028799f7917f4d1e7862852$8a1563da7ad64a8f5c28b9dc05e6e6757539641ee056132cb6986ae1d52153a5',
+     'bireysel', 'kullanici'),
+    ('Deneme Yonetici', 'yonetici@ornek.test',
+     'pbkdf2_sha256$600000$0ab982c6f250a33877a582be92e9cdb6$9f2af3dcbaf54a756ac7479d0119205a0b675331afd54d68c7d162c3de69fe91',
+     'bireysel', 'yonetici');
 
 
 -- ---------------------------------------------------------------------
@@ -40,7 +53,9 @@ SELECT id, 'pro', 500, 430      FROM kullanicilar WHERE email = 'muhasebeci@orne
 UNION ALL
 SELECT id, 'ucretsiz', 20, 12   FROM kullanicilar WHERE email = 'kobi@ornek.test'
 UNION ALL
-SELECT id, 'ucretsiz', 20, 20   FROM kullanicilar WHERE email = 'bireysel@ornek.test';
+SELECT id, 'ucretsiz', 20, 20   FROM kullanicilar WHERE email = 'bireysel@ornek.test'
+UNION ALL
+SELECT id, 'ucretsiz', 20, 20   FROM kullanicilar WHERE email = 'yonetici@ornek.test';
 
 
 -- ---------------------------------------------------------------------

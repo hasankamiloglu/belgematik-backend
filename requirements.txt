@@ -4,4 +4,5 @@
 Flask>=3.0,<4.0          # Web çatısı (framework)
 python-dotenv>=1.0       # .env dosyasındaki gizli ayarları okur
 psycopg[binary]>=3.2     # PostgreSQL sürücüsü: Python'un veritabanıyla konuşmasını sağlar (Hafta 4)
+PyJWT>=2.8               # JWT token üretme/doğrulama: giriş ve oturum yönetimi (Hafta 5)
 pytest>=8.0              # Otomatik testler

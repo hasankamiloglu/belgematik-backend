@@ -6,6 +6,7 @@
 |---|---|---|
 | Şema (DDL) | `db/migrations/001_tablolari_olustur.sql` | 7 tablo, birincil/yabancı anahtarlar, CHECK/UNIQUE/NOT NULL kısıtları |
 | İndeksler | `db/migrations/002_indeksleri_olustur.sql` | 5 indeks + eklenmeyenlerin gerekçesi |
+| Kimlik (Hafta 5) | `db/migrations/003_kimlik_dogrulama.sql` | yetki, hatalı giriş sayacı, kilit, token sürümü + `giris_denemeleri` tablosu |
 | Örnek veri (DML) | `db/seed/ornek_veri.sql` | Tamamen sentetik veri (KVKK uyumlu) |
 | Örnek sorgular | `db/sorgular/ornek_sorgular.sql` | JOIN, GROUP BY, N-N sorgusu, EXPLAIN |
 | Bağlantı | `app/data/db.py` | `DATABASE_URL` ile psycopg bağlantısı |
@@ -22,7 +23,7 @@ python manage.py migrate    # tabloları + indeksleri oluşturur (tekrar çalı�
 python manage.py seed       # örnek veriyi yükler (önce tabloları boşaltır)
 python manage.py sorgular   # örnek sorguları çalıştırır
 python manage.py demo       # CRUD işlemlerini adım adım gösterir
-pytest                      # 4 API + 11 veritabanı testi
+pytest                      # tüm testler (Hafta 5 itibarıyla 41 test)
 ```
 
 ## Elle açıklanan ilişki ve kısıtlar
