@@ -19,7 +19,7 @@ veritabanına göndermeden ÖNCE bu listelerle kontrol edebilir.
 ROLLER = ("bireysel", "kobi", "muhasebeci")
 PAKETLER = ("ucretsiz", "pro")
 DOSYA_TURLERI = ("png", "jpg", "jpeg", "pdf")
-BELGE_DURUMLARI = ("yuklendi", "islendi", "hatali")
+BELGE_DURUMLARI = ("yuklendi", "on_islendi", "islendi", "hatali")  # on_islendi: Hafta 6
 VERI_TIPLERI = ("metin", "tarih", "para", "sayi")
 OCR_MOTORLARI = ("tesseract", "yapay_zeka")
 CIKARIM_DURUMLARI = ("bekliyor", "dogrulandi", "duzeltildi")

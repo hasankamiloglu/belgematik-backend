@@ -10,7 +10,7 @@ Belgematik belgenin fotoğrafını alır, OCR ve yapay zekâ ile alanları (firm
 > - **belgematik-backend** (bu depo): Python + Flask API, iş kuralları, veritabanı
 > - **[belgematik-frontend](https://github.com/hasankamiloglu/belgematik-frontend)**: React arayüzü
 >
-> Durum: **v0.4 – Kullanıcı yönetimi ve kimlik doğrulama (Hafta 5)**. Modüller haftalık olarak eklenmektedir.
+> Durum: **v0.5 – Fotoğraf yükleme ve ön işleme (Hafta 6)**. Modüller haftalık olarak eklenmektedir.
 
 ## API uçları
 
@@ -24,8 +24,13 @@ Belgematik belgenin fotoğrafını alır, OCR ve yapay zekâ ile alanları (firm
 | GET | `/api/auth/ben` | Giriş yapan kullanıcı 🔒 |
 | POST | `/api/auth/cikis` | Çıkış (token geçersiz olur) 🔒 |
 | GET | `/api/yonetici/kullanicilar` | Kullanıcılar + giriş denemeleri 🔒 **sadece yönetici** |
+| POST | `/api/belgeler` | Fotoğraf/PDF yükle + ön işle (multipart, alan: `dosya`) 🔒 |
+| GET | `/api/belgeler` | Kendi belgelerim + kalan kredi 🔒 |
+| GET | `/api/belgeler/<id>` | Tek belge (sadece sahibi) 🔒 |
+| GET | `/api/belgeler/<id>/gorsel?tur=orijinal\|islenmis\|kucuk` | Görsel dosyası 🔒 |
+| DELETE | `/api/belgeler/<id>` | Belgeyi ve dosyalarını sil 🔒 |
 
-🔒 = `Authorization: Bearer <token>` başlığı gerekir. Güvenlik ayrıntıları: [docs/guvenlik-notu.md](docs/guvenlik-notu.md)
+🔒 = `Authorization: Bearer <token>` başlığı gerekir. Güvenlik ayrıntıları: [docs/guvenlik-notu.md](docs/guvenlik-notu.md) · Yükleme/ön işleme: [docs/on-isleme.md](docs/on-isleme.md)
 
 ## Özellikler (yol haritası)
 
@@ -34,7 +39,7 @@ Belgematik belgenin fotoğrafını alır, OCR ve yapay zekâ ile alanları (firm
 | Proje iskeleti | Katmanlı mimari, API, CORS, testler | ✅ Hafta 3 |
 | Veritabanı | PostgreSQL tabloları, kısıtlar, indeksler, CRUD | ✅ Hafta 4 |
 | Kimlik doğrulama | Kayıt/giriş, parola hash, JWT, rol tabanlı erişim | ✅ Hafta 5 |
-| Fotoğraf yükleme | PNG / JPG / PDF yükleme ve ön işleme | ⏳ |
+| Fotoğraf yükleme | PNG / JPG / PDF yükleme, kalite ölçümü, ön işleme | ✅ Hafta 6 |
 | OCR | Tesseract (ücretsiz) + Yapay zekâ (pro) | ⏳ |
 | Alan eşleme ve doğrulama | Şema ve iş kuralı kontrolü | ⏳ |
 | Düzeltme | Hatalı alanları düzeltme API'si | ⏳ |
@@ -42,7 +47,7 @@ Belgematik belgenin fotoğrafını alır, OCR ve yapay zekâ ile alanları (firm
 
 ## Teknolojiler
 
-Python · Flask · PostgreSQL (psycopg, saf SQL + migration) · PyJWT · Tesseract OCR · Görsel destekli LLM API · Pydantic · pytest · Git/GitHub
+Python · Flask · PostgreSQL (psycopg, saf SQL + migration) · PyJWT · Pillow · Tesseract OCR · Görsel destekli LLM API · Pydantic · pytest · Git/GitHub
 
 ## Mimari
 
@@ -55,6 +60,8 @@ app/
 ├── api/            # 1) SUNUM katmanı : API uçları, JSON cevaplar
 ├── services/       # 2) İŞ katmanı    : OCR, alan eşleme, doğrulama, dışa aktarma
 │   ├── auth/           # parola hash, JWT, giriş akışı (Hafta 5)
+│   ├── preprocessing/  # görsel doğrulama, kalite, ön işleme (Hafta 6)
+│   ├── belge_servisi.py# yükleme iş kuralları: kredi, sahiplik, tekrar (Hafta 6)
 │   ├── ocr/
 │   ├── extraction/
 │   ├── validation/
@@ -103,7 +110,7 @@ belgematik-backend/
 ├── app/               # Uygulama kodu (3 katman)
 ├── db/                # SQL: migrations/ (şema), seed/ (örnek veri), sorgular/
 ├── tests/             # Otomatik testler
-├── uploads/           # Yüklenen belgeler (Git'e gitmez)
+├── uploads/           # Yüklenen belgeler: uploads/<kullanici_id>/ (Git'e gitmez)
 ├── docs/              # Diyagramlar, kurulum ve haftalık raporlar
 ├── config.py          # Ortam ayarları (geliştirme / test / canlı) ve CORS
 ├── run.py             # API'yi başlatan dosya

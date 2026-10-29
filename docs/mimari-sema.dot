@@ -10,7 +10,7 @@ digraph Mimari {
     label="DEPO 1: belgematik-frontend  (React + Vite)  -  localhost:5173";
     style="rounded,filled"; fillcolor="#fff6e8"; color="#c27a12"; fontsize=13;
     app_jsx [label="App.jsx\n(ana bilesen)"];
-    comps [label="pages/ + components/\nGiris, Kayit, Panel, Yonetici\nKorumaliSayfa (rota korumasi)"];
+    comps [label="pages/ + components/\nGiris, Kayit, Panel, Belgelerim, Yonetici\nYuklemeAlani, Karsilastirma, KorumaliSayfa"];
     client [label="api/client.js\n(fetch + Authorization: Bearer token)"];
     app_jsx -> comps -> client;
   }
@@ -21,11 +21,14 @@ digraph Mimari {
     subgraph cluster_api {
       label="1) SUNUM katmani - app/api/"; style="rounded,filled"; fillcolor="#f4eefa"; color="#5b2a86";
       routes [label="routes.py\n/api/saglik   /api/moduller"];
+      belge_api [label="belgeler.py\n/api/belgeler  (yukle, listele, gorsel, sil)"];
       kimlik_api [label="kimlik.py + yetki.py\n/api/auth/*  /api/yonetici/*\n@giris_gerekli  @yetki_gerekli"];
     }
     subgraph cluster_is {
       label="2) IS katmani - app/services/"; style="rounded,filled"; fillcolor="#eef3fb"; color="#2f5ea8";
       auth [label="auth/\nParola hash, JWT, giris akisi", fillcolor="#fdf3e1"];
+      belge_srv [label="belge_servisi.py\nkredi, sahiplik, tekrar kontrolu", fillcolor="#fdf3e1"];
+      prep [label="preprocessing/\nkalite olcumu + on isleme (Pillow)", fillcolor="#fdf3e1"];
       ocr [label="ocr/\nMetin okuma"];
       extraction [label="extraction/\nAlan esleme"];
       validation [label="validation/\nDogrulama"];
@@ -43,13 +46,18 @@ digraph Mimari {
   subgraph cluster_dis {
     label="DIS SISTEMLER"; style="rounded,dashed"; color="#8a8f9c";
     pg [label="PostgreSQL", shape=cylinder, fillcolor="#f6f7fb"];
+    disk [label="uploads/<kullanici_id>/\n(orijinal, islenmis, kucuk)", shape=folder, fillcolor="#f6f7fb"];
     tess [label="Tesseract OCR\n(ucretsiz mod)", fillcolor="#f6f7fb"];
     llm [label="Yapay Zeka API\n(pro mod)", fillcolor="#f6f7fb"];
   }
 
   kullanici -> app_jsx [label=" sayfayi acar"];
   client -> routes [label=" HTTP istegi / JSON cevap\n (CORS izinli)", color="#c27a12", fontcolor="#c27a12", penwidth=1.8, dir=both];
-  routes -> ocr [label=" is cagrisi"];
+  belge_api -> belge_srv;
+  belge_srv -> prep;
+  prep -> ocr [label=" on_islendi -> OCR (Hafta 7)", style=dashed];
+  belge_srv -> repos [label=" belge + kredi"];
+  belge_srv -> disk;
   kimlik_api -> auth;
   auth -> repos [label=" kullanici / giris kaydi"];
   validation -> repos [label=" kaydet / oku"];

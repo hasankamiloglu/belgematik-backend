@@ -66,6 +66,17 @@ def create_app(config_name=None):
     app.register_blueprint(kimlik_bp, url_prefix="/api/auth")
     app.register_blueprint(yonetici_bp, url_prefix="/api/yonetici")
 
+    # Hafta 6: belge yükleme ve ön işleme (app/api/belgeler.py)
+    from app.api.belgeler import belge_bp
+
+    app.register_blueprint(belge_bp, url_prefix="/api/belgeler")
+
+    # 10 MB'tan büyük dosya gelirse Flask isteği daha okumadan 413 hatası verir
+    # (config.py -> MAX_CONTENT_LENGTH). Bu hatayı da JSON olarak döndürüyoruz.
+    @app.errorhandler(413)
+    def cok_buyuk(_hata):
+        return {"hata": "Dosya 10 MB'tan büyük olamaz."}, 413
+
     @app.route("/")
     def ana_sayfa():
         """
@@ -75,7 +86,8 @@ def create_app(config_name=None):
         return {
             "mesaj": "Belgematik backend API çalışıyor. Ekranlar için frontend'i açın.",
             "frontend": "http://localhost:5173",
-            "api": ["/api/saglik", "/api/moduller", "/api/auth/giris", "/api/auth/kayit"],
+            "api": ["/api/saglik", "/api/moduller", "/api/auth/giris", "/api/auth/kayit",
+                    "/api/belgeler"],
         }
 
     # ------------------------------------------------------------------

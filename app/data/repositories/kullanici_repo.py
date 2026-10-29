@@ -104,6 +104,14 @@ def guncelle(conn, kullanici_id, ad_soyad=None, rol=None):
     ).fetchone()
 
 
+def kalan_kredi(conn, kullanici_id):
+    """Kullanıcının bu ayki kalan kredisi. Aboneliği yoksa 0. (Hafta 6)"""
+    satir = conn.execute(
+        "SELECT kalan_kredi FROM abonelikler WHERE kullanici_id = %s", (kullanici_id,)
+    ).fetchone()
+    return satir["kalan_kredi"] if satir else 0
+
+
 def kredi_dus(conn, kullanici_id, miktar=1):
     """
     Kullanıcının kalan kredisinden düşer. Kredi yetmezse CHECK kısıtı
