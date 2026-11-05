@@ -20,7 +20,7 @@ from flask import Blueprint, jsonify
 api_bp = Blueprint("api", __name__)
 
 # Uygulamanın sürüm numarası. Sağlık kontrolünde döndürülür.
-SURUM = "0.6.0"
+SURUM = "0.7.0"  # Hafta 8 (vize) ara sürümü. Git etiketi: v0.7.0
 
 # Ana modüller listesi: frontend bunu ana sayfada yol haritası olarak gösterir.
 # durum -> "hazir" (tamamlandı) veya "planli" (ileriki haftalarda)
@@ -30,7 +30,7 @@ MODULLER = [
     {"ad": "Kullanıcı yönetimi ve kimlik doğrulama", "hafta": 5, "durum": "hazir"},
     {"ad": "Fotoğraf yükleme ve ön işleme", "hafta": 6, "durum": "hazir"},
     {"ad": "OCR, alan eşleme ve doğrulama", "hafta": 7, "durum": "hazir"},
-    {"ad": "Ara sürüm (vize) ve entegrasyon", "hafta": 8, "durum": "planli"},
+    {"ad": "Ara sürüm v0.7.0 (vize) ve uçtan uca entegrasyon", "hafta": 8, "durum": "hazir"},
     {"ad": "Düzeltme arayüzü", "hafta": 9, "durum": "planli"},
     {"ad": "Dışa aktarma (Excel/CSV/JSON)", "hafta": 10, "durum": "planli"},
 ]

@@ -1,0 +1,52 @@
+# GitHub Actions - Sürekli Entegrasyon (CI)
+# Her "git push"ta GitHub kendi bilgisayarında:
+#   1) PostgreSQL ve Tesseract kurar   2) kütüphaneleri yükler
+#   3) migration + örnek veri          4) TÜM testleri çalıştırır
+# Bir değişiklik eski bir özelliği bozarsa (REGRESYON) GitHub'da kırmızı ✗ görünür.
+# Sonuçlar: GitHub deposu -> "Actions" sekmesi
+
+name: Testler
+
+on: [push, pull_request]   # ne zaman çalışsın: her push ve pull request
+
+jobs:
+  test:
+    runs-on: ubuntu-latest  # GitHub'ın verdiği geçici Linux bilgisayar
+
+    services:
+      # Testler gerçek veritabanı ister: geçici bir PostgreSQL 16 başlatılır
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_PASSWORD: test123
+          POSTGRES_DB: belgematik
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd pg_isready --health-interval 5s --health-timeout 5s --health-retries 10
+
+    env:
+      DATABASE_URL: postgresql://postgres:test123@localhost:5432/belgematik
+      SECRET_KEY: ci-icin-gecici-anahtar-en-az-32-karakter-uzunlukta
+
+    steps:
+      - name: Kodu indir
+        uses: actions/checkout@v4
+
+      - name: Python kur
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Tesseract OCR kur
+        run: sudo apt-get update && sudo apt-get install -y tesseract-ocr
+
+      - name: Kütüphaneleri kur
+        run: pip install -r requirements.txt
+
+      - name: Veritabanını hazırla
+        run: |
+          python manage.py migrate
+          python manage.py seed
+
+      - name: Tüm testleri çalıştır
+        run: pytest -v

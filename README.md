@@ -10,7 +10,8 @@ Belgematik belgenin fotoğrafını alır, OCR ve yapay zekâ ile alanları (firm
 > - **belgematik-backend** (bu depo): Python + Flask API, iş kuralları, veritabanı
 > - **[belgematik-frontend](https://github.com/hasankamiloglu/belgematik-frontend)**: React arayüzü
 >
-> Durum: **v0.6 – OCR, alan eşleme ve doğrulama (Hafta 7)**. Modüller haftalık olarak eklenmektedir.
+> Durum: **v0.7.0 – Ara sürüm (vize, Hafta 8)** 🏷️ Git etiketi `v0.7.0` · Sürüm notları: [CHANGELOG.md](CHANGELOG.md)
+> Her `git push`ta 99 otomatik test GitHub Actions'ta çalışır (**Actions** sekmesi).
 
 ## API uçları
 
@@ -37,6 +38,14 @@ Belgematik belgenin fotoğrafını alır, OCR ve yapay zekâ ile alanları (firm
 
 🔒 = `Authorization: Bearer <token>` başlığı gerekir. Güvenlik ayrıntıları: [docs/guvenlik-notu.md](docs/guvenlik-notu.md) · Yükleme/ön işleme: [docs/on-isleme.md](docs/on-isleme.md) · Alan eşleme/doğrulama: [docs/alan-esleme.md](docs/alan-esleme.md)
 
+## Ara sürüm belgeleri (vize)
+
+| Belge | İçerik |
+|---|---|
+| [docs/ilerleme-raporu-vize.md](docs/ilerleme-raporu-vize.md) | Mimari özeti, modül durumu, entegrasyon tablosu, giderilen hatalar, demo senaryosu, sonraki plan |
+| [docs/ai-kullanim-gunlugu.md](docs/ai-kullanim-gunlugu.md) | Yapay zekâ kullanım günlüğü |
+| [CHANGELOG.md](CHANGELOG.md) | Sürüm notları (anlamsal sürümleme) |
+
 ## Özellikler (yol haritası)
 
 | Modül | Açıklama | Durum |
@@ -47,6 +56,7 @@ Belgematik belgenin fotoğrafını alır, OCR ve yapay zekâ ile alanları (firm
 | Fotoğraf yükleme | PNG / JPG / PDF yükleme, kalite ölçümü, ön işleme | ✅ Hafta 6 |
 | OCR | Tesseract (ücretsiz) · Yapay zekâ (pro) | ✅ Hafta 7 (Tesseract) |
 | Alan eşleme ve doğrulama | Şema tanımı, anahtar kelime eşleme, VKN/KDV kuralları | ✅ Hafta 7 |
+| Ara sürüm v0.7.0 | Uçtan uca entegrasyon testi, hata düzeltmeleri, GitHub Actions | ✅ Hafta 8 |
 | Düzeltme | Hatalı alanları düzeltme API'si | ⏳ |
 | Dışa aktarma | Excel, CSV, JSON | ⏳ |
 
@@ -106,7 +116,7 @@ Kontrol: http://127.0.0.1:5000/api/saglik
 Örnek hesaplar (sadece geliştirme, parola `Deneme123`): `yonetici@ornek.test` (yönetici), `bireysel@ornek.test`, `kobi@ornek.test`, `muhasebeci@ornek.test`.
 Bir hesabı yönetici yapmak için: `python manage.py yonetici EMAIL`
 
-Testleri çalıştırmak için: `pytest`  ·  CRUD demosu: `python manage.py demo`
+Testleri çalıştırmak için: `pytest` (uçtan uca senaryo: `pytest tests/test_uctan_uca.py -v`)  ·  CRUD demosu: `python manage.py demo`
 
 Ekranları görmek için frontend'i de çalıştırın: [belgematik-frontend](https://github.com/hasankamiloglu/belgematik-frontend)
 
@@ -116,13 +126,15 @@ Ekranları görmek için frontend'i de çalıştırın: [belgematik-frontend](ht
 belgematik-backend/
 ├── app/               # Uygulama kodu (3 katman)
 ├── db/                # SQL: migrations/ (şema), seed/ (örnek veri), sorgular/
-├── tests/             # Otomatik testler
+├── tests/             # Otomatik testler (birim + API + uçtan uca)
+├── .github/workflows/ # GitHub Actions: her push'ta testler
 ├── uploads/           # Yüklenen belgeler: uploads/<kullanici_id>/ (Git'e gitmez)
 ├── docs/              # Diyagramlar, kurulum ve haftalık raporlar
 ├── config.py          # Ortam ayarları (geliştirme / test / canlı) ve CORS
 ├── run.py             # API'yi başlatan dosya
 ├── manage.py          # Komutlar: migrate, seed, sorgular, demo, yonetici, ocr-kontrol
 ├── requirements.txt   # Python kütüphaneleri
+├── CHANGELOG.md       # Sürüm notları
 ├── .env.example       # Örnek gizli ayar dosyası
 └── .gitignore         # Git'e gönderilmeyecek dosyalar
 ```

@@ -51,11 +51,30 @@ def komut_migrate():
         print("Toplam uygulanmış migration:", len(migrasyon.uygulananlar(conn)))
 
 
+def _yuklenen_dosyalari_temizle():
+    """
+    Hafta 8 hata düzeltmesi: seed tüm kullanıcıları ve belgeleri sildiği halde
+    uploads/<kullanici_id>/ klasörlerindeki dosyalar diskte kalıyordu ("yetim" dosyalar).
+    Artık seed ile birlikte bu klasörler de silinir. uploads/.gitkeep korunur.
+    """
+    import shutil
+
+    klasor = KOK / "uploads"
+    silinen = 0
+    for alt in klasor.iterdir() if klasor.exists() else []:
+        if alt.is_dir() and alt.name.isdigit():  # sadece kullanıcı klasörleri: uploads/12/
+            shutil.rmtree(alt, ignore_errors=True)
+            silinen += 1
+    return silinen
+
+
 def komut_seed():
     sql = (KOK / "db" / "seed" / "ornek_veri.sql").read_text(encoding="utf-8")
     with baglanti() as conn:
         with conn.transaction():  # ya hepsi yüklenir ya hiçbiri
             conn.execute(sql)
+    temizlenen = _yuklenen_dosyalari_temizle()
+    with baglanti() as conn:
         sayilar = conn.execute(
             """
             SELECT (SELECT count(*) FROM kullanicilar)      AS kullanicilar,
@@ -70,6 +89,7 @@ def komut_seed():
     print("Örnek veri yüklendi:")
     for tablo, sayi in sayilar.items():
         print(f"  {tablo:<20} {sayi} satır")
+    print(f"  (uploads/ altındaki {temizlenen} eski kullanıcı klasörü temizlendi)")
 
 
 def komut_sorgular():

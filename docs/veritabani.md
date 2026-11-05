@@ -25,7 +25,7 @@ python manage.py migrate    # tabloları + indeksleri oluşturur (tekrar çalı�
 python manage.py seed       # örnek veriyi yükler (önce tabloları boşaltır)
 python manage.py sorgular   # örnek sorguları çalıştırır
 python manage.py demo       # CRUD işlemlerini adım adım gösterir
-pytest                      # tüm testler (Hafta 7 itibarıyla 97 test)
+pytest                      # tüm testler (Hafta 8 itibarıyla 99 test)
 ```
 
 ## Elle açıklanan ilişki ve kısıtlar
