@@ -10,7 +10,7 @@ digraph Mimari {
     label="DEPO 1: belgematik-frontend  (React + Vite)  -  localhost:5173";
     style="rounded,filled"; fillcolor="#fff6e8"; color="#c27a12"; fontsize=13;
     app_jsx [label="App.jsx\n(ana bilesen)"];
-    comps [label="pages/ + components/\nGiris, Kayit, Panel, Belgelerim, Yonetici\nYuklemeAlani, Karsilastirma, KorumaliSayfa"];
+    comps [label="pages/ + components/\nGiris, Kayit, Belgelerim, Semalar, Yonetici\nYuklemeAlani, CikarimPenceresi, KorumaliSayfa"];
     client [label="api/client.js\n(fetch + Authorization: Bearer token)"];
     app_jsx -> comps -> client;
   }
@@ -22,6 +22,7 @@ digraph Mimari {
       label="1) SUNUM katmani - app/api/"; style="rounded,filled"; fillcolor="#f4eefa"; color="#5b2a86";
       routes [label="routes.py\n/api/saglik   /api/moduller"];
       belge_api [label="belgeler.py\n/api/belgeler  (yukle, listele, gorsel, sil)"];
+      cikarim_api [label="cikarim.py\n/api/semalar   /api/belgeler/<id>/isle"];
       kimlik_api [label="kimlik.py + yetki.py\n/api/auth/*  /api/yonetici/*\n@giris_gerekli  @yetki_gerekli"];
     }
     subgraph cluster_is {
@@ -29,9 +30,10 @@ digraph Mimari {
       auth [label="auth/\nParola hash, JWT, giris akisi", fillcolor="#fdf3e1"];
       belge_srv [label="belge_servisi.py\nkredi, sahiplik, tekrar kontrolu", fillcolor="#fdf3e1"];
       prep [label="preprocessing/\nkalite olcumu + on isleme (Pillow)", fillcolor="#fdf3e1"];
-      ocr [label="ocr/\nMetin okuma"];
-      extraction [label="extraction/\nAlan esleme"];
-      validation [label="validation/\nDogrulama"];
+      cikarim_srv [label="cikarim_servisi.py\nOCR -> esleme -> dogrulama -> kayit", fillcolor="#fdf3e1"];
+      ocr [label="ocr/\nTesseract ile metin okuma", fillcolor="#fdf3e1"];
+      extraction [label="extraction/\nAlan esleme (anahtar kelime, kalip)", fillcolor="#fdf3e1"];
+      validation [label="validation/\nAlan + is kurali, VKN/TCKN", fillcolor="#fdf3e1"];
       export [label="export/\nExcel - CSV - JSON"];
       ocr -> extraction -> validation -> export;
     }
@@ -55,7 +57,10 @@ digraph Mimari {
   client -> routes [label=" HTTP istegi / JSON cevap\n (CORS izinli)", color="#c27a12", fontcolor="#c27a12", penwidth=1.8, dir=both];
   belge_api -> belge_srv;
   belge_srv -> prep;
-  prep -> ocr [label=" on_islendi -> OCR (Hafta 7)", style=dashed];
+  prep -> ocr [label=" islenmis gorsel", style=dashed];
+  cikarim_api -> cikarim_srv;
+  cikarim_srv -> ocr;
+  cikarim_srv -> repos [label=" cikarim + degerler"];
   belge_srv -> repos [label=" belge + kredi"];
   belge_srv -> disk;
   kimlik_api -> auth;
@@ -63,5 +68,5 @@ digraph Mimari {
   validation -> repos [label=" kaydet / oku"];
   models -> pg [label=" SQL"];
   ocr -> tess;
-  ocr -> llm;
+  ocr -> llm [style=dashed, label=" pro (ileride)"];
 }

@@ -10,6 +10,7 @@ Tüm adreslerin başında /api vardır (bkz. app/__init__.py -> url_prefix).
 
 Kimlik doğrulama uçları ayrı dosyadadır: app/api/kimlik.py (Hafta 5)
 Belge yükleme uçları ayrı dosyadadır:     app/api/belgeler.py (Hafta 6)
+Şema ve belge işleme uçları:              app/api/cikarim.py  (Hafta 7)
 
 """
 
@@ -19,7 +20,7 @@ from flask import Blueprint, jsonify
 api_bp = Blueprint("api", __name__)
 
 # Uygulamanın sürüm numarası. Sağlık kontrolünde döndürülür.
-SURUM = "0.5.0"
+SURUM = "0.6.0"
 
 # Ana modüller listesi: frontend bunu ana sayfada yol haritası olarak gösterir.
 # durum -> "hazir" (tamamlandı) veya "planli" (ileriki haftalarda)
@@ -28,11 +29,10 @@ MODULLER = [
     {"ad": "Veritabanı ve veri erişim katmanı", "hafta": 4, "durum": "hazir"},
     {"ad": "Kullanıcı yönetimi ve kimlik doğrulama", "hafta": 5, "durum": "hazir"},
     {"ad": "Fotoğraf yükleme ve ön işleme", "hafta": 6, "durum": "hazir"},
-    {"ad": "OCR / metin çıkarma", "hafta": 7, "durum": "planli"},
-    {"ad": "Alan eşleme ve doğrulama", "hafta": 8, "durum": "planli"},
-    {"ad": "Yapılandırılmış çıktı (JSON)", "hafta": 9, "durum": "planli"},
-    {"ad": "Düzeltme arayüzü", "hafta": 10, "durum": "planli"},
-    {"ad": "Dışa aktarma (Excel/CSV/JSON)", "hafta": 11, "durum": "planli"},
+    {"ad": "OCR, alan eşleme ve doğrulama", "hafta": 7, "durum": "hazir"},
+    {"ad": "Ara sürüm (vize) ve entegrasyon", "hafta": 8, "durum": "planli"},
+    {"ad": "Düzeltme arayüzü", "hafta": 9, "durum": "planli"},
+    {"ad": "Dışa aktarma (Excel/CSV/JSON)", "hafta": 10, "durum": "planli"},
 ]
 
 
@@ -44,7 +44,7 @@ def bilgi():
         "surum": SURUM,
         "adresler": ["/api/saglik", "/api/moduller", "/api/auth/kayit", "/api/auth/giris",
                      "/api/auth/ben", "/api/auth/cikis", "/api/yonetici/kullanicilar",
-                     "/api/belgeler"],
+                     "/api/belgeler", "/api/semalar"],
     })
 
 

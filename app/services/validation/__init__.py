@@ -1,8 +1,8 @@
 """
-Doğrulama (validation) modülü.
+validation paketi - Çıkarılan alanların doğrulanması (Hafta 7).
 
-İki seviyede kontrol yapacak:
-    1) Şema doğrulama  -> Alan doğru tipte mi? (tarih gerçekten tarih mi?)
-    2) İş kuralları    -> Vergi no 10 haneli mi? Matrah + KDV = Toplam mı?
-Hatalı alanlar düzeltme ekranında kullanıcıya işaretlenecek.
+    kimlik_no.py   -> Vergi kimlik no (VKN) ve TC kimlik no kontrol hanesi algoritmaları
+    dogrulayici.py -> Alan kuralları (zorunlu, tip, regex, özel) + alanlar arası iş kuralları
+
+Bu paket de Flask'ı ve veritabanını BİLMEZ; tek başına test edilebilir.
 """

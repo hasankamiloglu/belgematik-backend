@@ -10,7 +10,7 @@ Belgematik belgenin fotoğrafını alır, OCR ve yapay zekâ ile alanları (firm
 > - **belgematik-backend** (bu depo): Python + Flask API, iş kuralları, veritabanı
 > - **[belgematik-frontend](https://github.com/hasankamiloglu/belgematik-frontend)**: React arayüzü
 >
-> Durum: **v0.5 – Fotoğraf yükleme ve ön işleme (Hafta 6)**. Modüller haftalık olarak eklenmektedir.
+> Durum: **v0.6 – OCR, alan eşleme ve doğrulama (Hafta 7)**. Modüller haftalık olarak eklenmektedir.
 
 ## API uçları
 
@@ -29,8 +29,13 @@ Belgematik belgenin fotoğrafını alır, OCR ve yapay zekâ ile alanları (firm
 | GET | `/api/belgeler/<id>` | Tek belge (sadece sahibi) 🔒 |
 | GET | `/api/belgeler/<id>/gorsel?tur=orijinal\|islenmis\|kucuk` | Görsel dosyası 🔒 |
 | DELETE | `/api/belgeler/<id>` | Belgeyi ve dosyalarını sil 🔒 |
+| POST | `/api/belgeler/<id>/isle` | OCR + alan eşleme + doğrulama (gövde: `{"sema_id": 1}`) 🔒 |
+| GET | `/api/belgeler/<id>/cikarim` | Son çıkarım sonucu: alanlar, güven, kurallar 🔒 |
+| GET | `/api/semalar` | Kullanabileceğim şemalar (sistem + kendi) 🔒 |
+| POST | `/api/semalar` | Kendi şemamı tanımla 🔒 |
+| DELETE | `/api/semalar/<id>` | Kendi şemamı sil (kullanımdaysa 409) 🔒 |
 
-🔒 = `Authorization: Bearer <token>` başlığı gerekir. Güvenlik ayrıntıları: [docs/guvenlik-notu.md](docs/guvenlik-notu.md) · Yükleme/ön işleme: [docs/on-isleme.md](docs/on-isleme.md)
+🔒 = `Authorization: Bearer <token>` başlığı gerekir. Güvenlik ayrıntıları: [docs/guvenlik-notu.md](docs/guvenlik-notu.md) · Yükleme/ön işleme: [docs/on-isleme.md](docs/on-isleme.md) · Alan eşleme/doğrulama: [docs/alan-esleme.md](docs/alan-esleme.md)
 
 ## Özellikler (yol haritası)
 
@@ -40,14 +45,14 @@ Belgematik belgenin fotoğrafını alır, OCR ve yapay zekâ ile alanları (firm
 | Veritabanı | PostgreSQL tabloları, kısıtlar, indeksler, CRUD | ✅ Hafta 4 |
 | Kimlik doğrulama | Kayıt/giriş, parola hash, JWT, rol tabanlı erişim | ✅ Hafta 5 |
 | Fotoğraf yükleme | PNG / JPG / PDF yükleme, kalite ölçümü, ön işleme | ✅ Hafta 6 |
-| OCR | Tesseract (ücretsiz) + Yapay zekâ (pro) | ⏳ |
-| Alan eşleme ve doğrulama | Şema ve iş kuralı kontrolü | ⏳ |
+| OCR | Tesseract (ücretsiz) · Yapay zekâ (pro) | ✅ Hafta 7 (Tesseract) |
+| Alan eşleme ve doğrulama | Şema tanımı, anahtar kelime eşleme, VKN/KDV kuralları | ✅ Hafta 7 |
 | Düzeltme | Hatalı alanları düzeltme API'si | ⏳ |
 | Dışa aktarma | Excel, CSV, JSON | ⏳ |
 
 ## Teknolojiler
 
-Python · Flask · PostgreSQL (psycopg, saf SQL + migration) · PyJWT · Pillow · Tesseract OCR · Görsel destekli LLM API · Pydantic · pytest · Git/GitHub
+Python · Flask · PostgreSQL (psycopg, saf SQL + migration) · PyJWT · Pillow · Tesseract OCR (pytesseract) · Görsel destekli LLM API · Pydantic · pytest · Git/GitHub
 
 ## Mimari
 
@@ -62,9 +67,10 @@ app/
 │   ├── auth/           # parola hash, JWT, giriş akışı (Hafta 5)
 │   ├── preprocessing/  # görsel doğrulama, kalite, ön işleme (Hafta 6)
 │   ├── belge_servisi.py# yükleme iş kuralları: kredi, sahiplik, tekrar (Hafta 6)
-│   ├── ocr/
-│   ├── extraction/
-│   ├── validation/
+│   ├── ocr/            # Tesseract ile metin okuma (Hafta 7)
+│   ├── extraction/     # alan eşleme (Hafta 7)
+│   ├── validation/     # alan + iş kuralı doğrulama, VKN/TCKN (Hafta 7)
+│   ├── cikarim_servisi.py # işleme akışı: OCR -> eşleme -> doğrulama -> kayıt
 │   └── export/
 └── data/           # 3) VERİ katmanı  : Veritabanı modelleri ve veri erişimi
     ├── db.py           # bağlantı
@@ -93,6 +99,7 @@ python run.py
 ```
 
 Önce PostgreSQL kurulu olmalı ve pgAdmin'de `belgematik` adında boş bir veritabanı oluşturulmalı.
+Belgeden veri çıkarmak için **Tesseract OCR** kurulu olmalı: [docs/kurulum-windows.md](docs/kurulum-windows.md) (kontrol: `python manage.py ocr-kontrol`).
 
 Kontrol: http://127.0.0.1:5000/api/saglik
 
@@ -114,7 +121,7 @@ belgematik-backend/
 ├── docs/              # Diyagramlar, kurulum ve haftalık raporlar
 ├── config.py          # Ortam ayarları (geliştirme / test / canlı) ve CORS
 ├── run.py             # API'yi başlatan dosya
-├── manage.py          # Komutlar: migrate, seed, sorgular, demo, yonetici
+├── manage.py          # Komutlar: migrate, seed, sorgular, demo, yonetici, ocr-kontrol
 ├── requirements.txt   # Python kütüphaneleri
 ├── .env.example       # Örnek gizli ayar dosyası
 └── .gitignore         # Git'e gönderilmeyecek dosyalar

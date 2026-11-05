@@ -24,12 +24,15 @@ Sırayla yapın. Her programı kurduktan sonra açık olan terminalleri kapatıp
    git config --global user.email "eposta@ornek.com"
    ```
 
-## 4. Tesseract OCR (Hafta 6'da kullanılacak, şimdiden kurun)
-1. GitHub'da "UB-Mannheim/tesseract" sayfasından Windows installer'ı (.exe) indirin.
-2. Kurulumda **"Additional language data"** altından **Turkish** dilini işaretleyin.
-3. Kurulum yolu varsayılan: `C:\Program Files\Tesseract-OCR`
-4. Bu klasörü Windows PATH'e ekleyin (Başlat → "ortam değişkenleri" → Path → Yeni).
-5. Kontrol: `tesseract --version` ve `tesseract --list-langs` (listede `tur` olmalı).
+## 4. Tesseract OCR (Hafta 7)
+1. Tarayıcıda **github.com/UB-Mannheim/tesseract/wiki** adresini açın ve
+   `tesseract-ocr-w64-setup-....exe` dosyasını indirin.
+2. Kurulumda **"Additional language data (download)"** bölümünü açın ve **Turkish** dilini işaretleyin.
+3. Kurulum klasörünü değiştirmeyin: `C:\Program Files\Tesseract-OCR`
+   (Belgematik bu klasörü kendisi bulur; PATH ayarı gerekmez.)
+4. Farklı bir klasöre kurduysanız `.env` dosyasına ekleyin:
+   `TESSERACT_CMD=D:\Tesseract-OCR\tesseract.exe`
+5. Kontrol: `python manage.py ocr-kontrol` → "Tesseract hazır" ve dil listesinde `tur` görünmeli.
 
 ## 5. PostgreSQL (Hafta 4'te kullanılacak, şimdiden kurun)
 1. https://www.postgresql.org/download/windows/ adresinden installer'ı indirin.

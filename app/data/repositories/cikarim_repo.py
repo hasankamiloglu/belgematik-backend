@@ -5,7 +5,11 @@ N-N ilişki hatırlatma:
     Bir çıkarım kaydında ÇOK alan vardır (firma_adi, tarih, toplam_tutar...).
     Bir şema alanı da ÇOK çıkarım kaydında kullanılır.
     Bu ilişkiyi cikarim_degerleri ara tablosu kurar: (cikarim_id, alan_id, deger).
+
+Hafta 7: sonuc_kaydet, son_cikarim, alan_degerleri eklendi (OCR + eşleme + doğrulama sonucu).
 """
+
+import json
 
 
 def kaydet(conn, belge_id, sema_adi, ocr_motoru, ham_metin, guven_skoru, degerler):
@@ -114,3 +118,75 @@ def sil(conn, cikarim_id):
     return conn.execute(
         "DELETE FROM cikarim_kayitlari WHERE id = %s", (cikarim_id,)
     ).rowcount == 1
+
+
+# ================================================== Hafta 7: OCR + eşleme sonucu
+def sonuc_kaydet(conn, belge_id, kullanici_id, sema_id, ocr, durum, kural_sonuclari, degerler):
+    """
+    Bir belgenin işlenme sonucunu TEK TRANSACTION ile kaydeder:
+        1) cikarim_kayitlari  -> 1 satır (OCR metni, güven, durum, iş kuralı sonuçları)
+        2) cikarim_degerleri  -> her alan için 1 satır (değer, güven, geçerli mi, hata mesajı)
+        3) belgeler.durum     -> 'islendi'
+    Biri başarısız olursa hiçbiri kaydedilmez.
+
+    Parametreler:
+        ocr      -> {"metin", "guven", "motor"}
+        degerler -> [{"alan_id", "deger", "guven", "gecerli_mi", "hata_mesaji"}, ...]
+    """
+    with conn.transaction():
+        kayit = conn.execute(
+            """
+            INSERT INTO cikarim_kayitlari (belge_id, kullanici_id, sema_id, ocr_motoru,
+                                           ham_metin, guven_skoru, durum, kural_sonuclari)
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s::jsonb)
+            RETURNING id, olusturma_tarihi
+            """,
+            (belge_id, kullanici_id, sema_id, ocr["motor"], ocr["metin"], ocr["guven"],
+             durum, json.dumps(kural_sonuclari, ensure_ascii=False)),
+        ).fetchone()
+        for d in degerler:
+            conn.execute(
+                """
+                INSERT INTO cikarim_degerleri (cikarim_id, alan_id, deger, guven_skoru,
+                                               gecerli_mi, hata_mesaji)
+                VALUES (%s, %s, %s, %s, %s, %s)
+                """,
+                (kayit["id"], d["alan_id"], d["deger"], d["guven"], d["gecerli_mi"], d["hata_mesaji"]),
+            )
+        conn.execute("UPDATE belgeler SET durum = 'islendi' WHERE id = %s", (belge_id,))
+    return kayit
+
+
+def son_cikarim(conn, belge_id, kullanici_id):
+    """
+    Belgenin EN SON çıkarım kaydı (sahiplik kontrolüyle: sadece belgenin sahibi).
+    Bir belge farklı şemalarla birkaç kez işlenebilir; ekranda en sonuncusu gösterilir.
+    """
+    return conn.execute(
+        """
+        SELECT ck.id, ck.belge_id, ck.sema_id, s.ad AS sema_adi, ck.ocr_motoru, ck.ham_metin,
+               ck.guven_skoru, ck.durum, ck.kural_sonuclari, ck.olusturma_tarihi
+        FROM cikarim_kayitlari ck
+        JOIN belgeler b ON b.id = ck.belge_id
+        JOIN semalar  s ON s.id = ck.sema_id
+        WHERE ck.belge_id = %s AND b.kullanici_id = %s
+        ORDER BY ck.id DESC
+        LIMIT 1
+        """,
+        (belge_id, kullanici_id),
+    ).fetchone()
+
+
+def alan_degerleri(conn, cikarim_id):
+    """Bir çıkarımın tüm alanları: şema bilgisi + bulunan değer + doğrulama sonucu."""
+    return conn.execute(
+        """
+        SELECT sa.alan_adi, sa.veri_tipi, sa.zorunlu_mu, cd.deger, cd.guven_skoru,
+               cd.gecerli_mi, cd.hata_mesaji, cd.duzeltildi_mi
+        FROM cikarim_degerleri cd
+        JOIN sema_alanlari sa ON sa.id = cd.alan_id
+        WHERE cd.cikarim_id = %s
+        ORDER BY sa.sira, sa.id
+        """,
+        (cikarim_id,),
+    ).fetchall()

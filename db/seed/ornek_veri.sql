@@ -75,31 +75,46 @@ FROM kullanicilar WHERE email = 'muhasebeci@ornek.test';
 -- ---------------------------------------------------------------------
 -- Şema alanları
 -- ---------------------------------------------------------------------
-INSERT INTO sema_alanlari (sema_id, alan_adi, veri_tipi, zorunlu_mu, dogrulama_kurali)
-SELECT s.id, a.alan_adi, a.veri_tipi, a.zorunlu_mu, a.kural
+-- Hafta 7: anahtar_kelimeler -> alan eşleyici OCR metninde bu kelimeleri arar.
+--          "-" ile başlayan kelime, o kelimeyi içeren satırı ELER (ör. -ARA: "ARA TOPLAM" alınmaz).
+INSERT INTO sema_alanlari (sema_id, alan_adi, veri_tipi, zorunlu_mu, dogrulama_kurali, anahtar_kelimeler, sira)
+SELECT s.id, a.alan_adi, a.veri_tipi, a.zorunlu_mu, a.kural, a.kelimeler, a.sira
 FROM semalar s
 JOIN (VALUES
-    ( 1, 'fis', 'firma_adi',     'metin', true,  NULL),
-    ( 2, 'fis', 'vergi_no',      'metin', true,  '^[0-9]{10}$'),
-    ( 3, 'fis', 'tarih',         'tarih', true,  NULL),
-    ( 4, 'fis', 'fis_no',        'metin', false, NULL),
-    ( 5, 'fis', 'kdv_orani',     'sayi',  false, NULL),
-    ( 6, 'fis', 'kdv_tutari',    'para',  true,  NULL),
-    ( 7, 'fis', 'toplam_tutar',  'para',  true,  NULL),
-    ( 8, 'fatura', 'firma_adi',    'metin', true,  NULL),
-    ( 9, 'fatura', 'vergi_no',     'metin', true,  '^[0-9]{10}$'),
-    (10, 'fatura', 'fatura_no',    'metin', true,  NULL),
-    (11, 'fatura', 'tarih',        'tarih', true,  NULL),
-    (12, 'fatura', 'matrah',       'para',  true,  NULL),
-    (13, 'fatura', 'kdv_tutari',   'para',  true,  NULL),
-    (14, 'fatura', 'toplam_tutar', 'para',  true,  NULL),
-    (15, 'kartvizit', 'ad_soyad', 'metin', true,  NULL),
-    (16, 'kartvizit', 'firma',    'metin', false, NULL),
-    (17, 'kartvizit', 'telefon',  'metin', false, NULL),
-    (18, 'kartvizit', 'email',    'metin', false, NULL)
-) AS a(sira, sema_adi, alan_adi, veri_tipi, zorunlu_mu, kural)
+    ( 1, 'fis', 'firma_adi',     'metin', true,  NULL,              NULL),
+    ( 2, 'fis', 'vergi_no',      'metin', true,  '^[0-9]{10,11}$',  'VKN,V.K.N,VERGI NO,VERGI NUMARASI,V.D,VD,TCKN'),
+    ( 3, 'fis', 'tarih',         'tarih', true,  NULL,              'TARIH,TARİH,TAR'),
+    ( 4, 'fis', 'fis_no',        'metin', false, NULL,              'FIS NO,FİŞ NO,FIS,FİŞ,BELGE NO'),
+    ( 5, 'fis', 'kdv_orani',     'sayi',  false, NULL,              'KDV %,KDV,%'),
+    ( 6, 'fis', 'kdv_tutari',    'para',  true,  NULL,              'TOPKDV,TOPLAM KDV,KDV TUTARI,HESAPLANAN KDV,KDV,-MATRAH,-HARIC'),
+    ( 7, 'fis', 'toplam_tutar',  'para',  true,  NULL,              'GENEL TOPLAM,ODENECEK TUTAR,TOPLAM,TUTAR,-ARA,-KDV,-MATRAH'),
+    ( 8, 'fatura', 'firma_adi',    'metin', true,  NULL,             NULL),
+    ( 9, 'fatura', 'vergi_no',     'metin', true,  '^[0-9]{10,11}$', 'VKN,V.K.N,VERGI NO,VERGI NUMARASI,V.D,VD,TCKN'),
+    (10, 'fatura', 'fatura_no',    'metin', true,  NULL,             'FATURA NO,FATURA NUMARASI,FATURA'),
+    (11, 'fatura', 'tarih',        'tarih', true,  NULL,             'FATURA TARIHI,TARIH,TARİH'),
+    (12, 'fatura', 'matrah',       'para',  true,  NULL,             'MATRAH,KDV HARIC,ARA TOPLAM'),
+    (13, 'fatura', 'kdv_tutari',   'para',  true,  NULL,             'HESAPLANAN KDV,TOPLAM KDV,KDV TUTARI,KDV,-MATRAH,-HARIC'),
+    (14, 'fatura', 'toplam_tutar', 'para',  true,  NULL,             'GENEL TOPLAM,ODENECEK TUTAR,TOPLAM,TUTAR,-ARA,-KDV,-MATRAH'),
+    (15, 'kartvizit', 'ad_soyad', 'metin', true,  NULL, NULL),
+    (16, 'kartvizit', 'firma',    'metin', false, NULL, NULL),
+    (17, 'kartvizit', 'telefon',  'metin', false, NULL, 'TEL,TELEFON,GSM,CEP,MOBIL'),
+    (18, 'kartvizit', 'email',    'metin', false, NULL, 'E-POSTA,EPOSTA,E-MAIL,EMAIL,MAIL')
+) AS a(sira, sema_adi, alan_adi, veri_tipi, zorunlu_mu, kural, kelimeler)
     ON s.ad = a.sema_adi AND s.sistem_semasi_mi
 -- ORDER BY -> alanlar listedeki sırayla eklensin (id'ler de bu sırayla verilir)
+ORDER BY a.sira;
+
+-- Muhasebecinin özel şemasının alanları (kullanıcı tanımlı şema örneği)
+INSERT INTO sema_alanlari (sema_id, alan_adi, veri_tipi, zorunlu_mu, dogrulama_kurali, anahtar_kelimeler, sira)
+SELECT s.id, a.alan_adi, a.veri_tipi, a.zorunlu_mu, a.kural, a.kelimeler, a.sira
+FROM semalar s
+JOIN (VALUES
+    (1, 'alici_adi', 'metin', true,  NULL,              'ALICI,ADI SOYADI'),
+    (2, 'tc_no',     'metin', true,  '^[0-9]{11}$',     'TC,T.C,TCKN'),
+    (3, 'tarih',     'tarih', true,  NULL,              'TARIH'),
+    (4, 'tutar',     'para',  true,  NULL,              'TUTAR,TOPLAM')
+) AS a(sira, alan_adi, veri_tipi, zorunlu_mu, kural, kelimeler)
+    ON s.ad = 'gider_pusulasi'
 ORDER BY a.sira;
 
 
@@ -122,8 +137,8 @@ JOIN (VALUES
 -- ---------------------------------------------------------------------
 -- Çıkarım kayıtları (işlenmiş belgeler için)
 -- ---------------------------------------------------------------------
-INSERT INTO cikarim_kayitlari (belge_id, sema_id, ocr_motoru, ham_metin, guven_skoru, durum)
-SELECT b.id, s.id, c.motor, c.metin, c.guven, c.durum
+INSERT INTO cikarim_kayitlari (belge_id, kullanici_id, sema_id, ocr_motoru, ham_metin, guven_skoru, durum)
+SELECT b.id, b.kullanici_id, s.id, c.motor, c.metin, c.guven, c.durum
 FROM belgeler b
 JOIN (VALUES
     ('market_fisi_001.jpg', 'tesseract',  'ORNEK MARKET (Ornek) VKN 1111111111 TARIH 12.10.2026 KDV %10 22,50 TOPLAM 247,50', 0.910, 'dogrulandi'),

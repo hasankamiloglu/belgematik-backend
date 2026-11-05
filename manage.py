@@ -7,6 +7,7 @@ Kullanım (sanal ortam aktifken, backend klasöründe):
     python manage.py demo      -> CRUD işlemlerini adım adım çalıştırıp ekrana yazar
     python manage.py sorgular  -> db/sorgular/ornek_sorgular.sql içindeki sorguları çalıştırır
     python manage.py yonetici EMAIL -> Bu e-postadaki hesabı YÖNETİCİ yapar (Hafta 5)
+    python manage.py ocr-kontrol    -> Tesseract OCR kurulu mu, hangi diller var? (Hafta 7)
 
 Yönetici yetkisi web sitesinden VERİLEMEZ; sadece sunucuya erişimi olan kişi
 bu komutla verebilir. Böylece kimse kendini yönetici yapamaz.
@@ -134,12 +135,32 @@ def komut_yonetici(email):
         print(f"  ✔ {sonuc['email']} artık yönetici. (Eski oturumları kapatıldı, tekrar giriş yapmalı.)")
 
 
+def komut_ocr_kontrol():
+    """Tesseract'ın kurulu olup olmadığını ve dil paketlerini gösterir."""
+    import pytesseract
+
+    from app.services.ocr import tesseract
+
+    yol = tesseract._programi_bul()
+    if yol is None:
+        print("  ✘ Tesseract bulunamadı. Kurulum: docs/kurulum-windows.md (4. bölüm)")
+        return
+    pytesseract.pytesseract.tesseract_cmd = yol
+    diller = pytesseract.get_languages()
+    print(f"  ✔ Tesseract hazır: {yol}")
+    print(f"    Sürüm: {pytesseract.get_tesseract_version()}")
+    print(f"    Diller: {', '.join(diller)}")
+    if "tur" not in diller:
+        print("  ⚠ Türkçe dil paketi (tur) yok; İngilizce ile okunacak. Kurulumda 'Turkish' seçin.")
+
+
 KOMUTLAR = {
     "migrate": komut_migrate,
     "seed": komut_seed,
     "demo": komut_demo,
     "sorgular": komut_sorgular,
     "yonetici": komut_yonetici,  # e-posta parametresi alır
+    "ocr-kontrol": komut_ocr_kontrol,
 }
 
 if __name__ == "__main__":

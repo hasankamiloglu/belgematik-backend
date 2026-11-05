@@ -71,6 +71,11 @@ def create_app(config_name=None):
 
     app.register_blueprint(belge_bp, url_prefix="/api/belgeler")
 
+    # Hafta 7: şemalar + belge işleme (OCR, alan eşleme, doğrulama) (app/api/cikarim.py)
+    from app.api.cikarim import cikarim_bp
+
+    app.register_blueprint(cikarim_bp, url_prefix="/api")
+
     # 10 MB'tan büyük dosya gelirse Flask isteği daha okumadan 413 hatası verir
     # (config.py -> MAX_CONTENT_LENGTH). Bu hatayı da JSON olarak döndürüyoruz.
     @app.errorhandler(413)
