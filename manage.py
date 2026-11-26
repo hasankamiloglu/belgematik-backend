@@ -9,6 +9,7 @@ Kullanım (sanal ortam aktifken, backend klasöründe):
     python manage.py yonetici EMAIL -> Bu e-postadaki hesabı YÖNETİCİ yapar (Hafta 5)
     python manage.py ocr-kontrol    -> Tesseract OCR kurulu mu, hangi diller var? (Hafta 7)
     python manage.py ocr-api-kontrol -> Harici OCR API (OCR.space) anahtarı çalışıyor mu? (Hafta 9)
+    python manage.py ai-kontrol      -> Yapay zekâ (Gemini) örnek fişten alan çıkarabiliyor mu? (Hafta 10)
 
 Yönetici yetkisi web sitesinden VERİLEMEZ; sadece sunucuya erişimi olan kişi
 bu komutla verebilir. Böylece kimse kendini yönetici yapamaz.
@@ -217,6 +218,70 @@ def komut_ocr_api_kontrol():
         print("    |", satir)
 
 
+def komut_ai_kontrol():
+    """
+    Hafta 10: Örnek bir fiş görselini yapay zekâya gönderir; istemi, ham JSON çıktısını
+    ve doğrulama sonucunu ekrana yazar. Anahtar ekrana YAZILMAZ (maskeli).
+    """
+    import json
+    import tempfile
+
+    from PIL import Image, ImageDraw, ImageFont
+
+    from app.data.repositories import sema_repo
+    from app.services.ai import gemini, yapay_zeka_cikarici
+    from app.services.ai.istem import istem_olustur
+
+    print(f"  Model        : {gemini.model_adi()}  (.env -> AI_MODEL)")
+    print(f"  API anahtarı : {gemini.maskeli_anahtar() or 'YOK'}")
+    if not gemini.anahtar_var_mi():
+        print("  ✘ .env dosyasına AI_API_ANAHTARI=... satırını ekleyin (docs/yapay-zeka.md).")
+        return
+
+    with baglanti() as conn:
+        sema = conn.execute("SELECT id, ad FROM semalar WHERE ad = 'fis' AND sistem_semasi_mi").fetchone()
+        if sema is None:
+            print("  ✘ 'fis' şeması yok. Önce: python manage.py seed")
+            return
+        alanlar = sema_repo.alanlari_getir(conn, sema["id"])
+
+    satirlar = ["ORNEK MARKET GIDA LTD. STI.", "V.D. BINGOL  VKN 1234567808",
+                "TARIH: 12.10.2026  SAAT: 14:32", "FIS NO: 0042",
+                "DETERJAN 3 KG   %20  *150,00", "SAMPUAN         %20  *97,50",
+                "TOPKDV               *41,25", "TOPLAM              *247,50"]
+    gorsel = Image.new("L", (760, 60 + 50 * len(satirlar)), 255)
+    cizim = ImageDraw.Draw(gorsel)
+    try:
+        yazi = ImageFont.truetype("consola.ttf", 28)
+    except OSError:
+        yazi = ImageFont.load_default(size=28)
+    for i, satir in enumerate(satirlar):
+        cizim.text((30, 30 + i * 50), satir, fill=0, font=yazi)
+
+    print("\n  --- İSTEM (prompt) ---")
+    print("  " + istem_olustur(sema["ad"], alanlar).replace("\n", "\n  "))
+    with tempfile.TemporaryDirectory() as klasor:
+        yol = f"{klasor}/ornek_fis.png"
+        gorsel.save(yol)
+        try:
+            sonuc = yapay_zeka_cikarici.cikar(yol, sema["ad"], alanlar, "\n".join(satirlar))
+        except gemini.YapayZekaHatasi as h:
+            print(f"  ✘ Yapay zekâ hatası [{h.tur}] (HTTP {h.http_kodu}): {h.mesaj}")
+            if h.http_kodu == 404:
+                try:
+                    print("    Kullanılabilir modeller:", ", ".join(gemini.modelleri_listele()[:15]))
+                except Exception as e:  # noqa: BLE001
+                    print("    Model listesi alınamadı:", e)
+            return
+
+    print("  --- HAM JSON ÇIKTI ---")
+    print("  " + json.dumps(sonuc["ham_cikti"], ensure_ascii=False, indent=2).replace("\n", "\n  "))
+    print("  --- DOĞRULANMIŞ SONUÇ ---")
+    for ad, b in sonuc["bulunanlar"].items():
+        isaret = "⚠" if b["dusuk_guven"] else ("✔" if b["deger"] else "✘")
+        print(f"  {isaret} {ad:<14} {str(b['deger']):<30} güven {b['guven']:.2f}  {b['not'] or ''}")
+
+
 KOMUTLAR = {
     "migrate": komut_migrate,
     "seed": komut_seed,
@@ -225,6 +290,7 @@ KOMUTLAR = {
     "yonetici": komut_yonetici,  # e-posta parametresi alır
     "ocr-kontrol": komut_ocr_kontrol,
     "ocr-api-kontrol": komut_ocr_api_kontrol,
+    "ai-kontrol": komut_ai_kontrol,
 }
 
 if __name__ == "__main__":

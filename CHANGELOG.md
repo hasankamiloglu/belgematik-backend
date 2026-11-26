@@ -13,6 +13,20 @@ Her sürüm GitHub'da bir **etiketle (tag)** işaretlenir: `git tag -a v0.7.0`.
 
 ---
 
+## [0.9.0] – Hafta 10 · Yapay zekâ ile yapılandırılmış veri çıkarımı 🏷️ `v0.9.0`
+### Eklendi
+- **Yapay zekâ yöntemi** (`app/services/ai/`): belge görseli + istem Google Gemini'ye gönderiliyor, alanlar JSON alınıyor
+  - `istem.py`: istem ve JSON şeması şemadan üretiliyor; istem sürümü (`v1`) her kayıtta saklanıyor
+  - `gemini.py`: REST istemcisi; anahtar `.env` → `AI_API_ANAHTARI` (HTTP başlığında); zaman aşımı, 3 deneme, hız sınırı; güvenlik engeli / boş / yarım cevap yönetimi
+  - `cikti_dogrulama.py`: JSON, yapı, tip, biçim kontrolü; değerin OCR metninde olup olmadığı (uydurma kontrolü); düşük güven işareti
+  - Bozuk/boş çıktıda veya serviste hata olursa **kural tabanlı eşleyiciye** otomatik dönüş
+- `POST /api/belgeler/<id>/isle` gövdesinde `"yontem": "kural" | "yapay_zeka"` (varsayılan kural)
+- Migration 007: `cikarim_yontemi`, `ai_model`, `istem_surumu`, `ai_ham_cikti`, `ai_notu`; alanlarda `dusuk_guven`, `kaynak_notu`
+- `python manage.py ai-kontrol`, `docs/yapay-zeka.md`, 31 yeni test (sahte cevaplarla)
+### Değişti
+- Düşük güvenli (0.40 altı) alan varsa belge `dogrulandi` değil `bekliyor` kalıyor (iki yöntem için de)
+- Testlerden sonra sahte API çağrıları günlükten temizleniyor
+
 ## [0.8.0] – Hafta 9 · Harici OCR API entegrasyonu 🏷️ `v0.8.0`
 ### Eklendi
 - **Harici OCR servisi (OCR.space REST API):** `app/services/ocr/harici_api.py`

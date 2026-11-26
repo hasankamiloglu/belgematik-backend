@@ -15,3 +15,7 @@ os.environ.setdefault("PAROLA_ITERASYON", "1000")
 # .env'de anahtar olsa bile testlerde Tesseract kullanılır. Harici API testleri
 # (test_harici_api.py) internete hiç çıkmadan SAHTE cevaplarla çalışır.
 os.environ["OCR_MOTORU"] = "tesseract"
+
+# Hafta 10: Testler gerçek yapay zekâ servisini de çağırmamalı. Yapay zekâ testleri
+# (test_yapay_zeka.py) sahte cevaplar kullanır ve anahtarı kendileri ayarlar.
+os.environ["AI_API_ANAHTARI"] = ""

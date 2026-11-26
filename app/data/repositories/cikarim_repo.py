@@ -8,6 +8,7 @@ N-N ilişki hatırlatma:
 
 Hafta 7: sonuc_kaydet, son_cikarim, alan_degerleri eklendi (OCR + eşleme + doğrulama sonucu).
 Hafta 9: ocr_notu kolonu (harici API çalışmayıp Tesseract'a geçildiyse nedeni).
+Hafta 10: yapay zekâ bilgileri (yöntem, model, istem sürümü, ham çıktı) ve düşük güven işareti.
 """
 
 import json
@@ -122,7 +123,7 @@ def sil(conn, cikarim_id):
 
 
 # ================================================== Hafta 7: OCR + eşleme sonucu
-def sonuc_kaydet(conn, belge_id, kullanici_id, sema_id, ocr, durum, kural_sonuclari, degerler):
+def sonuc_kaydet(conn, belge_id, kullanici_id, sema_id, ocr, durum, kural_sonuclari, degerler, ai=None):
     """
     Bir belgenin işlenme sonucunu TEK TRANSACTION ile kaydeder:
         1) cikarim_kayitlari  -> 1 satır (OCR metni, güven, durum, iş kuralı sonuçları)
@@ -132,27 +133,35 @@ def sonuc_kaydet(conn, belge_id, kullanici_id, sema_id, ocr, durum, kural_sonucl
 
     Parametreler:
         ocr      -> {"metin", "guven", "motor", "not"}  (not: Hafta 9, yedek motor nedeni)
-        degerler -> [{"alan_id", "deger", "guven", "gecerli_mi", "hata_mesaji"}, ...]
+        degerler -> [{"alan_id", "deger", "guven", "gecerli_mi", "hata_mesaji",
+                      "dusuk_guven", "kaynak_notu"}, ...]
+        ai       -> Hafta 10: {"yontem", "model", "istem_surumu", "ham_cikti", "not"} (yoksa kural)
     """
+    ai = ai or {"yontem": "kural"}
     with conn.transaction():
         kayit = conn.execute(
             """
             INSERT INTO cikarim_kayitlari (belge_id, kullanici_id, sema_id, ocr_motoru,
-                                           ham_metin, guven_skoru, durum, kural_sonuclari, ocr_notu)
-            VALUES (%s, %s, %s, %s, %s, %s, %s, %s::jsonb, %s)
+                                           ham_metin, guven_skoru, durum, kural_sonuclari, ocr_notu,
+                                           cikarim_yontemi, ai_model, istem_surumu, ai_ham_cikti, ai_notu)
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s::jsonb, %s, %s, %s, %s, %s::jsonb, %s)
             RETURNING id, olusturma_tarihi
             """,
             (belge_id, kullanici_id, sema_id, ocr["motor"], ocr["metin"], ocr["guven"],
-             durum, json.dumps(kural_sonuclari, ensure_ascii=False), ocr.get("not")),
+             durum, json.dumps(kural_sonuclari, ensure_ascii=False), ocr.get("not"),
+             ai["yontem"], ai.get("model"), ai.get("istem_surumu"),
+             json.dumps(ai["ham_cikti"], ensure_ascii=False) if ai.get("ham_cikti") is not None else None,
+             ai.get("not")),
         ).fetchone()
         for d in degerler:
             conn.execute(
                 """
                 INSERT INTO cikarim_degerleri (cikarim_id, alan_id, deger, guven_skoru,
-                                               gecerli_mi, hata_mesaji)
-                VALUES (%s, %s, %s, %s, %s, %s)
+                                               gecerli_mi, hata_mesaji, dusuk_guven, kaynak_notu)
+                VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
                 """,
-                (kayit["id"], d["alan_id"], d["deger"], d["guven"], d["gecerli_mi"], d["hata_mesaji"]),
+                (kayit["id"], d["alan_id"], d["deger"], d["guven"], d["gecerli_mi"], d["hata_mesaji"],
+                 d.get("dusuk_guven", False), d.get("kaynak_notu")),
             )
         conn.execute("UPDATE belgeler SET durum = 'islendi' WHERE id = %s", (belge_id,))
     return kayit
@@ -166,7 +175,8 @@ def son_cikarim(conn, belge_id, kullanici_id):
     return conn.execute(
         """
         SELECT ck.id, ck.belge_id, ck.sema_id, s.ad AS sema_adi, ck.ocr_motoru, ck.ham_metin,
-               ck.guven_skoru, ck.durum, ck.kural_sonuclari, ck.olusturma_tarihi, ck.ocr_notu
+               ck.guven_skoru, ck.durum, ck.kural_sonuclari, ck.olusturma_tarihi, ck.ocr_notu,
+               ck.cikarim_yontemi, ck.ai_model, ck.istem_surumu, ck.ai_ham_cikti, ck.ai_notu
         FROM cikarim_kayitlari ck
         JOIN belgeler b ON b.id = ck.belge_id
         JOIN semalar  s ON s.id = ck.sema_id
@@ -183,7 +193,7 @@ def alan_degerleri(conn, cikarim_id):
     return conn.execute(
         """
         SELECT sa.alan_adi, sa.veri_tipi, sa.zorunlu_mu, cd.deger, cd.guven_skoru,
-               cd.gecerli_mi, cd.hata_mesaji, cd.duzeltildi_mi
+               cd.gecerli_mi, cd.hata_mesaji, cd.duzeltildi_mi, cd.dusuk_guven, cd.kaynak_notu
         FROM cikarim_degerleri cd
         JOIN sema_alanlari sa ON sa.id = cd.alan_id
         WHERE cd.cikarim_id = %s

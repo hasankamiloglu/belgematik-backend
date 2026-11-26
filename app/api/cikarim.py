@@ -5,6 +5,7 @@ cikarim.py - Şema ve belge işleme API uçları (Hafta 7).
     POST   /api/semalar                 -> kendi şemamı tanımla
     DELETE /api/semalar/<id>            -> kendi şemamı sil
     POST   /api/belgeler/<id>/isle      -> OCR + alan eşleme + doğrulama, gövde: {"sema_id": 1}
+                                           Hafta 10: + "yontem": "kural" | "yapay_zeka"
     GET    /api/belgeler/<id>/cikarim   -> son işleme sonucu
 
 Hepsi giriş gerektirir. Kullanıcı id'si token'dan alınır (sahiplik).
@@ -60,13 +61,17 @@ def sema_sil(sema_id):
 @cikarim_bp.route("/belgeler/<int:belge_id>/isle", methods=["POST"])
 @giris_gerekli
 def isle(belge_id):
-    """Belgeyi seçilen şemayla işler. Gövde: {"sema_id": 1}"""
+    """
+    Belgeyi seçilen şemayla işler.
+    Gövde: {"sema_id": 1, "yontem": "kural" | "yapay_zeka"}   (yontem Hafta 10, varsayılan "kural")
+    """
     veri = request.get_json(silent=True) or {}
     sema_id = veri.get("sema_id")
     if not isinstance(sema_id, int):
         return jsonify({"hata": "sema_id (sayı) gönderilmeli."}), 400
     sonuc = cikarim_servisi.belge_isle(
-        g.kullanici["id"], belge_id, sema_id, current_app.config["UPLOAD_FOLDER"]
+        g.kullanici["id"], belge_id, sema_id, current_app.config["UPLOAD_FOLDER"],
+        yontem=veri.get("yontem") or "kural",
     )
     return jsonify(sonuc), 201
 

@@ -10,7 +10,7 @@ Belgematik belgenin fotoğrafını alır, OCR ve yapay zekâ ile alanları (firm
 > - **belgematik-backend** (bu depo): Python + Flask API, iş kuralları, veritabanı
 > - **[belgematik-frontend](https://github.com/hasankamiloglu/belgematik-frontend)**: React arayüzü
 >
-> Durum: **v0.8.0 – Harici OCR API entegrasyonu (Hafta 9)** 🏷️ Git etiketi `v0.8.0` · Sürüm notları: [CHANGELOG.md](CHANGELOG.md)
+> Durum: **v0.9.0 – Yapay zekâ ile veri çıkarımı (Hafta 10)** 🏷️ Git etiketi `v0.9.0` · Sürüm notları: [CHANGELOG.md](CHANGELOG.md)
 > Her `git push`ta 99 otomatik test GitHub Actions'ta çalışır (**Actions** sekmesi).
 
 ## API uçları
@@ -58,6 +58,7 @@ Belgematik belgenin fotoğrafını alır, OCR ve yapay zekâ ile alanları (firm
 | Alan eşleme ve doğrulama | Şema tanımı, anahtar kelime eşleme, VKN/KDV kuralları | ✅ Hafta 7 |
 | Ara sürüm v0.7.0 | Uçtan uca entegrasyon testi, hata düzeltmeleri, GitHub Actions | ✅ Hafta 8 |
 | Harici API | OCR.space, hata yönetimi, hız sınırı, yedek motor, çağrı günlüğü | ✅ Hafta 9 |
+| Yapay zekâ | Gemini ile JSON çıkarım, istem tasarımı, çıktı doğrulama, düşük güven işareti | ✅ Hafta 10 |
 | Düzeltme | Hatalı alanları düzeltme API'si | ⏳ |
 | Dışa aktarma | Excel, CSV, JSON | ⏳ |
 
@@ -79,6 +80,7 @@ app/
 │   ├── preprocessing/  # görsel doğrulama, kalite, ön işleme (Hafta 6)
 │   ├── belge_servisi.py# yükleme iş kuralları: kredi, sahiplik, tekrar (Hafta 6)
 │   ├── ocr/            # Tesseract (Hafta 7) + harici OCR API, motor seçici (Hafta 9)
+│   ├── ai/             # yapay zekâ: istem, Gemini istemcisi, çıktı doğrulama (Hafta 10)
 │   ├── extraction/     # alan eşleme (Hafta 7)
 │   ├── validation/     # alan + iş kuralı doğrulama, VKN/TCKN (Hafta 7)
 │   ├── cikarim_servisi.py # işleme akışı: OCR -> eşleme -> doğrulama -> kayıt
@@ -112,6 +114,7 @@ python run.py
 Önce PostgreSQL kurulu olmalı ve pgAdmin'de `belgematik` adında boş bir veritabanı oluşturulmalı.
 Belgeden veri çıkarmak için **Tesseract OCR** kurulu olmalı: [docs/kurulum-windows.md](docs/kurulum-windows.md) (kontrol: `python manage.py ocr-kontrol`).
 Harici OCR API (OCR.space) isteğe bağlıdır: [docs/harici-api.md](docs/harici-api.md) (kontrol: `python manage.py ocr-api-kontrol`).
+Yapay zekâ (Gemini) isteğe bağlıdır: [docs/yapay-zeka.md](docs/yapay-zeka.md) (kontrol: `python manage.py ai-kontrol`).
 
 Kontrol: http://127.0.0.1:5000/api/saglik
 
@@ -134,7 +137,7 @@ belgematik-backend/
 ├── docs/              # Diyagramlar, kurulum ve haftalık raporlar
 ├── config.py          # Ortam ayarları (geliştirme / test / canlı) ve CORS
 ├── run.py             # API'yi başlatan dosya
-├── manage.py          # Komutlar: migrate, seed, sorgular, demo, yonetici, ocr-kontrol, ocr-api-kontrol
+├── manage.py          # Komutlar: migrate, seed, sorgular, demo, yonetici, ocr-kontrol, ocr-api-kontrol, ai-kontrol
 ├── requirements.txt   # Python kütüphaneleri
 ├── CHANGELOG.md       # Sürüm notları
 ├── .env.example       # Örnek gizli ayar dosyası

@@ -6,6 +6,7 @@ BELGE İŞLEME AKIŞI (modüllerin uçtan uca birleştiği yer):
     Hafta 6 ön işlenmiş görsel ──▶ OCR (ocr/motor_secici.py)     -> ham metin + güven
                                    (Hafta 9: önce harici API OCR.space, hata olursa Tesseract)
                                    ──▶ ALAN EŞLEME (extraction/)   -> {alan: değer}
+                                       veya YAPAY ZEKÂ (ai/, Hafta 10) -> JSON -> çıktı doğrulama
                                    ──▶ DOĞRULAMA (validation/)     -> geçerli mi + iş kuralları
                                    ──▶ KAYIT (cikarim_repo)        -> cikarim_kayitlari + degerleri
                                                                       belge durumu 'islendi'
@@ -27,6 +28,10 @@ from psycopg import errors as db_hatalari
 from app.data.db import baglanti
 from app.data.repositories import cikarim_repo, sema_repo
 from app.services import belge_servisi
+from app.services.ai import gemini, yapay_zeka_cikarici
+from app.services.ai.cikti_dogrulama import DUSUK_GUVEN_ESIGI
+from app.services.ai.gemini import YapayZekaHatasi
+from app.services.ai.istem import ISTEM_SURUMU
 from app.services.extraction.eslestirici import alanlari_esle
 from app.services.ocr import motor_secici, tesseract
 from app.services.validation.dogrulayici import dogrula
@@ -136,11 +141,23 @@ def sema_sil(kullanici_id, sema_id):
 
 
 # ================================================================ BELGE İŞLE
-def belge_isle(kullanici_id, belge_id, sema_id, yukleme_klasoru):
+YONTEMLER = ("kural", "yapay_zeka")
+
+
+def belge_isle(kullanici_id, belge_id, sema_id, yukleme_klasoru, yontem="kural"):
     """
-    Belgeyi OCR + alan eşleme + doğrulamadan geçirip sonucu kaydeder.
+    Belgeyi OCR + alan çıkarımı + doğrulamadan geçirip sonucu kaydeder.
+
+    yontem (Hafta 10):
+        "kural"      -> Hafta 7'deki kural tabanlı eşleyici (anahtar kelime / kalıp / konum)
+        "yapay_zeka" -> Görsel Gemini'ye gönderilir, alanlar JSON olarak alınır ve doğrulanır.
+                        Yapay zekâ hata verirse (anahtar yok, kota, bozuk çıktı...) otomatik
+                        olarak kural tabanlı eşleyiciye dönülür ve nedeni kaydedilir.
     Döndürür: sonuc() ile aynı biçimde çıkarım sonucu.
     """
+    if yontem not in YONTEMLER:
+        raise CikarimHatasi("yontem 'kural' veya 'yapay_zeka' olmalı.", 400)
+
     # 1) Sahiplik + belge uygun mu? (Hafta 6 modülü)
     belge = belge_servisi.getir(kullanici_id, belge_id)  # başkasınınsa 404
     if not belge["on_islenmis"]:
@@ -155,31 +172,70 @@ def belge_isle(kullanici_id, belge_id, sema_id, yukleme_klasoru):
             raise CikarimHatasi("Şema bulunamadı.", 404)
         alanlar = sema_repo.alanlari_getir(conn, sema_id)
 
-    # 3) OCR: ön işlenmiş görseli oku (Hafta 9: motor seçici harici API'yi veya Tesseract'ı kullanır)
+    # 3) OCR: ön işlenmiş görseli oku (Hafta 9: harici API veya Tesseract)
+    #    Yapay zekâ yönteminde de OCR yapılır: modelin bulduğu değerler OCR metniyle
+    #    KARŞILAŞTIRILIR (uydurma kontrolü). OCR çalışmazsa yapay zekâ yine denenir.
     yol = os.path.join(yukleme_klasoru, belge["islenmis_yol"])
     try:
         ocr = motor_secici.metin_oku(yol, kullanici_id=kullanici_id, belge_id=belge_id)
     except tesseract.OcrHatasi as h:  # harici_api.ApiHatasi da bunun alt sınıfı
-        raise CikarimHatasi(h.mesaj, 503)  # 503 -> hizmet şu an kullanılamıyor
+        if yontem != "yapay_zeka":
+            raise CikarimHatasi(h.mesaj, 503)  # 503 -> hizmet şu an kullanılamıyor
+        ocr = {"metin": "", "guven": 1.0, "motor": "yapay_zeka",
+               "not": f"OCR yapılamadı ({h.mesaj}); yapay zekâ değerleri OCR ile karşılaştırılamadı."}
 
-    # 4) Alan eşleme + 5) doğrulama
-    bulunanlar = alanlari_esle(ocr["metin"], alanlar)
+    # 4) Alan çıkarımı
+    ai = {"yontem": "kural", "model": None, "istem_surumu": None, "ham_cikti": None, "not": None}
+    bulunanlar = None
+    if yontem == "yapay_zeka":
+        try:
+            sonuc_ai = yapay_zeka_cikarici.cikar(yol, sema["ad"], alanlar, ocr["metin"] or None,
+                                                 kullanici_id=kullanici_id, belge_id=belge_id)
+            bulunanlar = sonuc_ai["bulunanlar"]
+            ai["yontem"] = "yapay_zeka"
+            ai["model"] = sonuc_ai["model"]
+            ai["istem_surumu"] = sonuc_ai["istem_surumu"]
+            ai["ham_cikti"] = sonuc_ai["ham_cikti"]
+            if sonuc_ai["uyarilar"]:
+                ai["not"] = " ".join(sonuc_ai["uyarilar"])[:300]
+        except YapayZekaHatasi as h:
+            # HATALI / BOŞ ÇIKTI YÖNETİMİ: kural tabanlı yönteme dön, nedeni sakla
+            if not ocr["metin"]:
+                raise CikarimHatasi(f"Yapay zekâ kullanılamadı ({h.mesaj}) ve OCR da yapılamadı.", 503)
+            ai["model"] = gemini.model_adi()
+            ai["istem_surumu"] = ISTEM_SURUMU
+            if h.ham_cikti:  # bozuk çıktıyı da saklıyoruz: neden reddedildiği görülebilsin
+                ai["ham_cikti"] = {"hata": h.mesaj, "ham_metin": h.ham_cikti}
+            ai["not"] = f"Yapay zekâ kullanılamadı ({h.mesaj}) Kural tabanlı eşleme kullanıldı."
+
+    if bulunanlar is None:
+        bulunanlar = alanlari_esle(ocr["metin"], alanlar)
+        # Kural tabanlı güven = eşleme yönteminin güveni × OCR'ın okuma güveni
+        for b in bulunanlar.values():
+            b["guven"] = round(b["guven"] * ocr["guven"], 3)
+            b["dusuk_guven"] = b["deger"] is not None and b["guven"] < DUSUK_GUVEN_ESIGI
+            b["not"] = None
+
+    # 5) Doğrulama (iki yöntem için de AYNI kurallar)
     alan_sonuclari, kural_sonuclari, hepsi_gecerli = dogrula(alanlar, bulunanlar)
 
-    # Alanın güveni = eşleme yönteminin güveni × OCR'ın okuma güveni
     degerler = [{
         "alan_id": alan["id"],
         "deger": bulunanlar[alan["alan_adi"]]["deger"],
-        "guven": round(bulunanlar[alan["alan_adi"]]["guven"] * ocr["guven"], 3),
+        "guven": bulunanlar[alan["alan_adi"]]["guven"],
         "gecerli_mi": alan_sonuclari[alan["alan_adi"]]["gecerli"],
         "hata_mesaji": alan_sonuclari[alan["alan_adi"]]["hata_mesaji"],
+        "dusuk_guven": bulunanlar[alan["alan_adi"]]["dusuk_guven"],
+        "kaynak_notu": bulunanlar[alan["alan_adi"]]["not"],
     } for alan in alanlar]
 
     # 6) Kayıt (tek transaction) -> belge 'islendi'
-    durum = "dogrulandi" if hepsi_gecerli else "bekliyor"
+    #    Düşük güvenli alan varsa kurallar geçse bile kullanıcı kontrol etmeli: 'bekliyor'
+    dusuk_var = any(d["dusuk_guven"] for d in degerler)
+    durum = "dogrulandi" if hepsi_gecerli and not dusuk_var else "bekliyor"
     with baglanti() as conn:
         cikarim_repo.sonuc_kaydet(conn, belge_id, kullanici_id, sema_id, ocr, durum,
-                                  kural_sonuclari, degerler)
+                                  kural_sonuclari, degerler, ai)
     return sonuc(kullanici_id, belge_id)
 
 
@@ -199,6 +255,12 @@ def sonuc(kullanici_id, belge_id):
         "ocr_motoru": kayit["ocr_motoru"],
         "ocr_guveni": _sayi(kayit["guven_skoru"]),
         "ocr_notu": kayit["ocr_notu"],  # Hafta 9: yedek motora geçildiyse nedeni
+        # Hafta 10: yöntem ve yapay zekâ bilgileri (şeffaflık)
+        "yontem": kayit["cikarim_yontemi"],
+        "ai_model": kayit["ai_model"],
+        "istem_surumu": kayit["istem_surumu"],
+        "ai_notu": kayit["ai_notu"],
+        "ai_ham_cikti": kayit["ai_ham_cikti"],
         "durum": kayit["durum"],
         "tarih": _iso(kayit["olusturma_tarihi"]),
         # deger her zaman METİN döner (ör. vergi no "0123..." sayıya çevrilirse baştaki 0 kaybolur)

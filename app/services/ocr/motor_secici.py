@@ -75,7 +75,12 @@ def metin_oku(gorsel_yolu, kullanici_id=None, belge_id=None):
 
 def durum_bilgisi():
     """Yönetici paneli için: hangi motor seçili, anahtar tanımlı mı (maskeli), sınırlar."""
+    from app.services.ai import gemini  # Hafta 10: yapay zekâ servisinin durumu da gösterilir
+
     return {
+        "yapay_zeka": {"servis": gemini.SERVIS_ADI, "model": gemini.model_adi(),
+                       "anahtar": gemini.maskeli_anahtar(),
+                       "dakika_siniri": int(os.getenv("AI_DAKIKA_SINIRI", "8"))},
         "secili_motor": secili_motor(),
         "servis": harici_api.MOTOR_ADI,
         "anahtar": harici_api.maskeli_anahtar(),  # gerçek anahtar ASLA döndürülmez
