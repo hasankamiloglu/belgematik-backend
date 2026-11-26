@@ -10,3 +10,8 @@ Gerçek uygulama (python run.py) bu dosyayı hiç okumaz.
 import os
 
 os.environ.setdefault("PAROLA_ITERASYON", "1000")
+
+# Hafta 9: Testler GERÇEK OCR API'sini çağırmamalı (hem kotayı harcar hem internete bağlı olur).
+# .env'de anahtar olsa bile testlerde Tesseract kullanılır. Harici API testleri
+# (test_harici_api.py) internete hiç çıkmadan SAHTE cevaplarla çalışır.
+os.environ["OCR_MOTORU"] = "tesseract"

@@ -20,7 +20,7 @@ from flask import Blueprint, jsonify
 api_bp = Blueprint("api", __name__)
 
 # Uygulamanın sürüm numarası. Sağlık kontrolünde döndürülür.
-SURUM = "0.7.0"  # Hafta 8 (vize) ara sürümü. Git etiketi: v0.7.0
+SURUM = "0.8.0"  # Hafta 9: harici OCR API entegrasyonu. Git etiketi: v0.8.0
 
 # Ana modüller listesi: frontend bunu ana sayfada yol haritası olarak gösterir.
 # durum -> "hazir" (tamamlandı) veya "planli" (ileriki haftalarda)
@@ -31,8 +31,9 @@ MODULLER = [
     {"ad": "Fotoğraf yükleme ve ön işleme", "hafta": 6, "durum": "hazir"},
     {"ad": "OCR, alan eşleme ve doğrulama", "hafta": 7, "durum": "hazir"},
     {"ad": "Ara sürüm v0.7.0 (vize) ve uçtan uca entegrasyon", "hafta": 8, "durum": "hazir"},
-    {"ad": "Düzeltme arayüzü", "hafta": 9, "durum": "planli"},
-    {"ad": "Dışa aktarma (Excel/CSV/JSON)", "hafta": 10, "durum": "planli"},
+    {"ad": "Harici OCR API entegrasyonu (OCR.space)", "hafta": 9, "durum": "hazir"},
+    {"ad": "Düzeltme arayüzü", "hafta": 10, "durum": "planli"},
+    {"ad": "Dışa aktarma (Excel/CSV/JSON)", "hafta": 11, "durum": "planli"},
 ]
 
 
@@ -44,6 +45,7 @@ def bilgi():
         "surum": SURUM,
         "adresler": ["/api/saglik", "/api/moduller", "/api/auth/kayit", "/api/auth/giris",
                      "/api/auth/ben", "/api/auth/cikis", "/api/yonetici/kullanicilar",
+                     "/api/yonetici/api-cagrilari",
                      "/api/belgeler", "/api/semalar"],
     })
 

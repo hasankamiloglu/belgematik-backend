@@ -3,7 +3,8 @@ cikarim_servisi.py - Belgeyi işleme akışı ve şema yönetimi (İŞ katmanı,
 
 BELGE İŞLEME AKIŞI (modüllerin uçtan uca birleştiği yer):
 
-    Hafta 6 ön işlenmiş görsel ──▶ OCR (ocr/tesseract.py)        -> ham metin + güven
+    Hafta 6 ön işlenmiş görsel ──▶ OCR (ocr/motor_secici.py)     -> ham metin + güven
+                                   (Hafta 9: önce harici API OCR.space, hata olursa Tesseract)
                                    ──▶ ALAN EŞLEME (extraction/)   -> {alan: değer}
                                    ──▶ DOĞRULAMA (validation/)     -> geçerli mi + iş kuralları
                                    ──▶ KAYIT (cikarim_repo)        -> cikarim_kayitlari + degerleri
@@ -27,7 +28,7 @@ from app.data.db import baglanti
 from app.data.repositories import cikarim_repo, sema_repo
 from app.services import belge_servisi
 from app.services.extraction.eslestirici import alanlari_esle
-from app.services.ocr import tesseract
+from app.services.ocr import motor_secici, tesseract
 from app.services.validation.dogrulayici import dogrula
 
 VERI_TIPLERI = ("metin", "tarih", "para", "sayi")
@@ -154,11 +155,11 @@ def belge_isle(kullanici_id, belge_id, sema_id, yukleme_klasoru):
             raise CikarimHatasi("Şema bulunamadı.", 404)
         alanlar = sema_repo.alanlari_getir(conn, sema_id)
 
-    # 3) OCR: ön işlenmiş görseli oku
+    # 3) OCR: ön işlenmiş görseli oku (Hafta 9: motor seçici harici API'yi veya Tesseract'ı kullanır)
     yol = os.path.join(yukleme_klasoru, belge["islenmis_yol"])
     try:
-        ocr = tesseract.metin_oku(yol)
-    except tesseract.OcrHatasi as h:
+        ocr = motor_secici.metin_oku(yol, kullanici_id=kullanici_id, belge_id=belge_id)
+    except tesseract.OcrHatasi as h:  # harici_api.ApiHatasi da bunun alt sınıfı
         raise CikarimHatasi(h.mesaj, 503)  # 503 -> hizmet şu an kullanılamıyor
 
     # 4) Alan eşleme + 5) doğrulama
@@ -197,6 +198,7 @@ def sonuc(kullanici_id, belge_id):
         "sema": {"id": kayit["sema_id"], "ad": kayit["sema_adi"]},
         "ocr_motoru": kayit["ocr_motoru"],
         "ocr_guveni": _sayi(kayit["guven_skoru"]),
+        "ocr_notu": kayit["ocr_notu"],  # Hafta 9: yedek motora geçildiyse nedeni
         "durum": kayit["durum"],
         "tarih": _iso(kayit["olusturma_tarihi"]),
         # deger her zaman METİN döner (ör. vergi no "0123..." sayıya çevrilirse baştaki 0 kaybolur)

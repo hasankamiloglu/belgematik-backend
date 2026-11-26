@@ -128,6 +128,15 @@ def test_kullanici_senaryosu_bastan_sona(client):
     assert client.get("/api/belgeler", headers=b).status_code == 401  # eski token artık geçersiz
 
 
-def test_api_surumu_ara_surumle_ayni(client):
-    """/api/saglik'teki sürüm, Git etiketiyle (v0.7.0) aynı olmalı."""
-    assert client.get("/api/saglik").get_json()["surum"] == "0.7.0"
+def test_api_surumu_changelog_ile_ayni(client):
+    """
+    /api/saglik'teki sürüm, CHANGELOG.md'deki en son sürümle aynı olmalı.
+    (Hafta 9: sabit "0.7.0" yerine CHANGELOG'dan okunuyor; her yeni sürümde
+    kodu ve sürüm notunu birlikte güncellemeyi unutursak bu test düşer.)
+    """
+    import re
+    from pathlib import Path
+
+    changelog = (Path(__file__).resolve().parent.parent / "CHANGELOG.md").read_text(encoding="utf-8")
+    son_surum = re.search(r"^## \[(\d+\.\d+\.\d+)\]", changelog, re.MULTILINE).group(1)
+    assert client.get("/api/saglik").get_json()["surum"] == son_surum

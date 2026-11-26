@@ -8,6 +8,7 @@ Kullanım (sanal ortam aktifken, backend klasöründe):
     python manage.py sorgular  -> db/sorgular/ornek_sorgular.sql içindeki sorguları çalıştırır
     python manage.py yonetici EMAIL -> Bu e-postadaki hesabı YÖNETİCİ yapar (Hafta 5)
     python manage.py ocr-kontrol    -> Tesseract OCR kurulu mu, hangi diller var? (Hafta 7)
+    python manage.py ocr-api-kontrol -> Harici OCR API (OCR.space) anahtarı çalışıyor mu? (Hafta 9)
 
 Yönetici yetkisi web sitesinden VERİLEMEZ; sadece sunucuya erişimi olan kişi
 bu komutla verebilir. Böylece kimse kendini yönetici yapamaz.
@@ -174,6 +175,48 @@ def komut_ocr_kontrol():
         print("  ⚠ Türkçe dil paketi (tur) yok; İngilizce ile okunacak. Kurulumda 'Turkish' seçin.")
 
 
+def komut_ocr_api_kontrol():
+    """
+    Hafta 9: Harici OCR API'yi örnek bir fişle dener ve sonucu ekrana yazar.
+    Anahtarın kendisi ekrana YAZILMAZ, sadece maskeli hali gösterilir.
+    """
+    import tempfile
+
+    from PIL import Image, ImageDraw, ImageFont
+
+    from app.services.ocr import harici_api, motor_secici
+
+    bilgi = motor_secici.durum_bilgisi()
+    print(f"  Seçili motor : {bilgi['secili_motor']}  (.env -> OCR_MOTORU)")
+    print(f"  API anahtarı : {bilgi['anahtar'] or 'YOK'}")
+    print(f"  Dakika sınırı: {bilgi['dakika_siniri']} çağrı")
+    if not harici_api.anahtar_var_mi():
+        print("  ✘ .env dosyasına OCR_API_ANAHTARI=... satırını ekleyin (docs/harici-api.md).")
+        return
+
+    # Örnek fiş görseli üret (gerçek kişisel veri yok)
+    gorsel = Image.new("L", (600, 260), 255)
+    cizim = ImageDraw.Draw(gorsel)
+    try:
+        yazi = ImageFont.truetype("arial.ttf", 30)
+    except OSError:
+        yazi = ImageFont.load_default(size=30)
+    for i, satir in enumerate(["ORNEK MARKET A.S.", "TARIH: 26.11.2026", "TOPLAM: 120,00 TL"]):
+        cizim.text((30, 30 + i * 70), satir, fill=0, font=yazi)
+    with tempfile.TemporaryDirectory() as klasor:
+        yol = f"{klasor}/ornek.png"
+        gorsel.save(yol)
+        try:
+            sonuc = harici_api.metin_oku(yol)
+        except harici_api.ApiHatasi as h:
+            print(f"  ✘ API hatası [{h.tur}] (HTTP {h.http_kodu}, {h.deneme}. deneme): {h.mesaj}")
+            return
+    print(f"  ✔ API çalışıyor: {sonuc['sure_ms']} ms, {sonuc['deneme']}. denemede")
+    print("  Okunan metin:")
+    for satir in sonuc["metin"].splitlines():
+        print("    |", satir)
+
+
 KOMUTLAR = {
     "migrate": komut_migrate,
     "seed": komut_seed,
@@ -181,6 +224,7 @@ KOMUTLAR = {
     "sorgular": komut_sorgular,
     "yonetici": komut_yonetici,  # e-posta parametresi alır
     "ocr-kontrol": komut_ocr_kontrol,
+    "ocr-api-kontrol": komut_ocr_api_kontrol,
 }
 
 if __name__ == "__main__":

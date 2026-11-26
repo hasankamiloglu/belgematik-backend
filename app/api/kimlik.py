@@ -6,6 +6,7 @@ kimlik.py - Kimlik doğrulama ve yönetici API uçları (Hafta 5).
     GET  /api/auth/ben            -> giriş yapan kişi   (giriş gerekli)
     POST /api/auth/cikis          -> çıkış              (giriş gerekli)
     GET  /api/yonetici/kullanicilar -> kullanıcı listesi (SADECE yönetici)
+    GET  /api/yonetici/api-cagrilari -> harici OCR API durumu ve çağrı günlüğü (SADECE yönetici, Hafta 9)
 
 Bu dosya iş kuralı içermez: isteği okur, servisi çağırır, JSON cevap döndürür.
 """
@@ -15,6 +16,7 @@ from flask import Blueprint, current_app, g, jsonify, request
 from app.api.yetki import giris_gerekli, yetki_gerekli
 from app.services.auth import kimlik_servisi
 from app.services.auth.kimlik_servisi import KimlikHatasi
+from app.services.ocr import motor_secici
 
 kimlik_bp = Blueprint("kimlik", __name__)
 yonetici_bp = Blueprint("yonetici", __name__)
@@ -88,3 +90,13 @@ def cikis():
 def kullanicilar():
     """Tüm kullanıcılar ve son giriş denemeleri (yönetici paneli)."""
     return jsonify(kimlik_servisi.yonetici_ozeti())
+
+
+@yonetici_bp.route("/api-cagrilari", methods=["GET"])
+@yetki_gerekli("yonetici")
+def api_cagrilari():
+    """
+    Hafta 9: Harici OCR API'nin durumu (seçili motor, maskeli anahtar, dakika sınırı)
+    + son 24 saat özeti + son çağrılar. Gerçek API anahtarı ASLA döndürülmez.
+    """
+    return jsonify(motor_secici.cagri_ozeti())

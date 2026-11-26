@@ -13,6 +13,21 @@ Her sürüm GitHub'da bir **etiketle (tag)** işaretlenir: `git tag -a v0.7.0`.
 
 ---
 
+## [0.8.0] – Hafta 9 · Harici OCR API entegrasyonu 🏷️ `v0.8.0`
+### Eklendi
+- **Harici OCR servisi (OCR.space REST API):** `app/services/ocr/harici_api.py`
+  - API anahtarı yalnızca `.env` → `OCR_API_ANAHTARI` (koda, depoya, loglara ve veritabanına yazılmaz; ekranda maskeli)
+  - Zaman aşımı (bağlanma 5 sn, cevap 30 sn), geçici hatalarda 3 deneme + üstel geri çekilme (1 sn, 2 sn)
+  - Hata türleri: anahtar yok, kimlik (401/403), hız sınırı (429), zaman aşımı, bağlantı, sunucu (5xx), bozuk cevap, dosya
+  - Kendi hız sınırımız: dakikada en fazla 10 çağrı (kayan pencere); görsel 1 MB altına sıkıştırılıyor
+- **Motor seçici** (`motor_secici.py`): `OCR_MOTORU=otomatik | api | tesseract`; API hata verirse Tesseract yedek olarak devreye girer
+- **API çağrı günlüğü:** `api_cagrilari` tablosu, `GET /api/yonetici/api-cagrilari` (sadece yönetici)
+- `python manage.py ocr-api-kontrol`: anahtarı örnek fişle dener
+- Migration 006, 28 yeni test (sahte HTTP cevaplarıyla, internete çıkmadan) · `requests` kütüphanesi
+### Değişti
+- Çıkarım sonucunda `ocr_notu` (yedek motora geçildiyse nedeni); `ocr_motoru` artık `ocr_space` olabilir
+- Sürüm testi sabit sayı yerine `CHANGELOG.md`'deki son sürümle karşılaştırıyor
+
 ## [0.7.0] – Hafta 8 · Ara sürüm (vize) 🏷️ `v0.7.0`
 ### Eklendi
 - Uçtan uca entegrasyon testi: kayıt → giriş → yükleme → OCR → eşleme → doğrulama → yönetici → çıkış (`tests/test_uctan_uca.py`)

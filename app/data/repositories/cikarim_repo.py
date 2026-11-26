@@ -7,6 +7,7 @@ N-N ilişki hatırlatma:
     Bu ilişkiyi cikarim_degerleri ara tablosu kurar: (cikarim_id, alan_id, deger).
 
 Hafta 7: sonuc_kaydet, son_cikarim, alan_degerleri eklendi (OCR + eşleme + doğrulama sonucu).
+Hafta 9: ocr_notu kolonu (harici API çalışmayıp Tesseract'a geçildiyse nedeni).
 """
 
 import json
@@ -130,19 +131,19 @@ def sonuc_kaydet(conn, belge_id, kullanici_id, sema_id, ocr, durum, kural_sonucl
     Biri başarısız olursa hiçbiri kaydedilmez.
 
     Parametreler:
-        ocr      -> {"metin", "guven", "motor"}
+        ocr      -> {"metin", "guven", "motor", "not"}  (not: Hafta 9, yedek motor nedeni)
         degerler -> [{"alan_id", "deger", "guven", "gecerli_mi", "hata_mesaji"}, ...]
     """
     with conn.transaction():
         kayit = conn.execute(
             """
             INSERT INTO cikarim_kayitlari (belge_id, kullanici_id, sema_id, ocr_motoru,
-                                           ham_metin, guven_skoru, durum, kural_sonuclari)
-            VALUES (%s, %s, %s, %s, %s, %s, %s, %s::jsonb)
+                                           ham_metin, guven_skoru, durum, kural_sonuclari, ocr_notu)
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s::jsonb, %s)
             RETURNING id, olusturma_tarihi
             """,
             (belge_id, kullanici_id, sema_id, ocr["motor"], ocr["metin"], ocr["guven"],
-             durum, json.dumps(kural_sonuclari, ensure_ascii=False)),
+             durum, json.dumps(kural_sonuclari, ensure_ascii=False), ocr.get("not")),
         ).fetchone()
         for d in degerler:
             conn.execute(
@@ -165,7 +166,7 @@ def son_cikarim(conn, belge_id, kullanici_id):
     return conn.execute(
         """
         SELECT ck.id, ck.belge_id, ck.sema_id, s.ad AS sema_adi, ck.ocr_motoru, ck.ham_metin,
-               ck.guven_skoru, ck.durum, ck.kural_sonuclari, ck.olusturma_tarihi
+               ck.guven_skoru, ck.durum, ck.kural_sonuclari, ck.olusturma_tarihi, ck.ocr_notu
         FROM cikarim_kayitlari ck
         JOIN belgeler b ON b.id = ck.belge_id
         JOIN semalar  s ON s.id = ck.sema_id

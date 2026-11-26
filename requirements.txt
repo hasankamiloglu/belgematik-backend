@@ -7,4 +7,5 @@ psycopg[binary]>=3.2     # PostgreSQL sürücüsü: Python'un veritabanıyla kon
 PyJWT>=2.8               # JWT token üretme/doğrulama: giriş ve oturum yönetimi (Hafta 5)
 Pillow>=11.0             # Görsel açma, kalite ölçme ve ön işleme (Hafta 6)
 pytesseract>=0.3.10      # Tesseract OCR programını Python'dan çağırır (Hafta 7)
+requests>=2.31           # Harici OCR API'sine (OCR.space) HTTP isteği gönderir (Hafta 9)
 pytest>=8.0              # Otomatik testler

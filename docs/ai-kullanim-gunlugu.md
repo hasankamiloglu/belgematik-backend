@@ -30,6 +30,7 @@ Yapay zekâ projede **eşli programlama (pair programming) ortağı** olarak kul
 | 6 | Fotoğraf yükleme ve ön işleme | Pillow ile kalite ölçümü ve ön işleme, iş kuralları | **Windows'ta testin düştüğünü buldu** (açık dosya silinemiyor) → düzeltildi; örnek fişlerle deneme | EXIF, gri ton, kontrast, SHA-256, transaction |
 | 7 | OCR, alan eşleme, doğrulama | Tesseract entegrasyonu, eşleyici, VKN/KDV kuralları, şema ekranı | Tesseract'ı Türkçe dil paketiyle kurdu; **3 testin düştüğünü buldu** → iki gerçek hata düzeltildi (RESTRICT hata kodu, Türkçe modelin "%" işaretini "4" okuması) | OCR güveni, anahtar kelime eşleme, kontrol hanesi algoritması, iş kuralı |
 | 8 | Entegrasyon, hata giderme, ara sürüm | Uçtan uca test, GitHub Actions, CHANGELOG, bu günlük, ilerleme raporu | Ara sürümü etiketledi (`git tag v0.7.0`), Actions sonuçlarını kontrol etti, demo senaryosunu prova etti | Anlamsal sürümleme, entegrasyon ve regresyon testi |
+| 9 | Harici OCR API entegrasyonu; API dokümantasyonunu anlama | OCR.space istemcisi, hata türleri, tekrar deneme, hız sınırı, yedek motor, sahte cevaplı testler | OCR.space'ten kendi ücretsiz anahtarını aldı ve sadece `.env`'e yazdı; `ocr-api-kontrol` ile gerçek API'yi denedi; anahtarın GitHub'da olmadığını kontrol etti | REST, API anahtarı, rate limit, zaman aşımı, üstel geri çekilme |
 
 ## Yapay zekâ çıktısının doğrulanması
 
